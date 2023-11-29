@@ -3,17 +3,40 @@
 
 #include "include/myfirstraytracer.h"
 
-color traceray(ray r) {
-    sphere center_sphere(vec3(0,0,-1),0.5);
-    if (center_sphere.hit(r)) { return color(1, 0, 0); }
-    vec3 unit_direction = r.direction.normalize();
-    double a = 0.5 * (double(unit_direction.y()) + 1.0);
-    return (1.0 - a) * color(1.0, 1.0, 1.0) + a * color(0.5, 0.7, 1.0);
+bool hit_anything(const ray& r, std::vector<hitable> world, double tmin, double tmax, intersection& isect) {
+    bool hit = false;
+    intersection temp_isect;
+    double closest_t = tmax;
+    for (int k = 0; k < world.size(); k++) {
+        if (world[k].hit(r, tmin, closest_t, temp_isect)) {
+            hit = true;
+            closest_t = temp_isect.hit_t;
+            isect = temp_isect;
+        }
+    }
+    return hit;
+}
+
+color traceray(ray r,std::vector<hitable> world) {
+    intersection isect;
+
+    if (hit_anything(r, world, 0.0, (double)FLT_MAX, isect)) {
+        return 0.5 * color(isect.hit_normal.x() + 1, isect.hit_normal.y() + 1, isect.hit_normal.z() + 1);
+    }
+    else {
+        vec3 unit_direction = r.direction.normalize();
+        double a = 0.5 * (double(unit_direction.y()) + 1.0);
+        return (1.0 - a) * color(1.0, 1.0, 1.0) + a * color(0.5, 0.7, 1.0);
+    }
 }
 
 int main() {
     std::string outputfile = "out/output.txt";
+    std::vector<hitable> world;
     
+    //add geometry 
+    world.push_back(sphere(vec3(0,0,-1),0.5));
+
 
     std::ofstream out(outputfile);
     int n_channels = 3;
@@ -49,7 +72,7 @@ int main() {
 
             ray r(camera_center, pixel_center - camera_center);
 
-            color pixelcolor = traceray(r);
+            color pixelcolor = traceray(r,world);
 
             write_color((j*image_width + i)*n_channels, pixelcolor,pixels);
 

@@ -5,8 +5,9 @@
 
 #include "vec3.h"
 #include "ray.h"
+#include "hitable.h"
 
-class sphere {
+class sphere: public hitable {
 public:
 	vec3 center;
 	double radius;
@@ -14,7 +15,7 @@ public:
 	sphere() {}
 	sphere(const vec3& c, const double& r) :center(c), radius(r) {}
 
-	bool hit(const ray& r);
+	virtual bool hit(const ray& r,double tmin,double tmax, intersection& isect) const;
 };
 
 #endif

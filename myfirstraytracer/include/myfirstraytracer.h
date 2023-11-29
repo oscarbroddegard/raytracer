@@ -7,6 +7,7 @@
 #include <iostream>
 #include <fstream>
 #include <chrono>
+#include <vector>
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
@@ -17,5 +18,6 @@
 #include "color.h"
 #include "ray.h"
 #include "sphere.h"
+#include "hitable.h"
 
 // TODO: Reference additional headers your program requires here.
