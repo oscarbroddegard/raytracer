@@ -1,2 +1,6 @@
 .vs
 out
+#git
+CMakeCache.txt
+Makefile
+cmake_install.cmake
