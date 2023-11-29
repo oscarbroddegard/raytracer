@@ -40,6 +40,8 @@ int main() {
 
     out << "P3\n" << image_width << ' ' << image_height << "\n255\n";
 
+    auto starttime = std::chrono::high_resolution_clock::now();
+
     for (int j = 0; j < image_height; j++) {
         for (int i = 0; i < image_width; i++) {
             std::clog << "\rProgress: " << int(100 * (double(j * (image_width + 1)) + double(i)) / double(image_height * image_width)) << "%" << std::flush;
@@ -54,6 +56,12 @@ int main() {
         }
     }
     std::clog << '\n';
+
+    //get time for performance log
+    auto endtime = std::chrono::high_resolution_clock::now();
+    auto duration = (std::chrono::duration_cast<std::chrono::microseconds>(endtime - starttime).count() / 1000000.0);
+
+    std::clog << "Done! Duration: " << duration << "s" << "\n";
 
     stbi_write_png("out.png",image_width,image_height,n_channels,pixels,image_width*n_channels);
 
