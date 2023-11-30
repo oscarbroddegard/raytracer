@@ -1,6 +1,5 @@
 #include "include/sphere.h"
 
-
 bool sphere::hit(const ray& r,double tmin,double tmax,intersection& isect) const{
 	vec3 OC = r.origin - center;
 	double a = dot(r.direction, r.direction);

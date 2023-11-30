@@ -19,5 +19,4 @@
 #include "ray.h"
 #include "sphere.h"
 #include "hitable.h"
-
-// TODO: Reference additional headers your program requires here.
+#include "camera.h"

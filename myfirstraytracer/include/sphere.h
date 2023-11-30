@@ -16,6 +16,7 @@ public:
 	sphere(const vec3& c, const double& r) :center(c), radius(r) {}
 
 	virtual bool hit(const ray& r,double tmin,double tmax, intersection& isect) const;
+
 };
 
 #endif
