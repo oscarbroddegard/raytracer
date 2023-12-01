@@ -20,3 +20,5 @@
 #include "sphere.h"
 #include "hitable.h"
 #include "camera.h"
+#include "scene.h"
+#include "material.h"

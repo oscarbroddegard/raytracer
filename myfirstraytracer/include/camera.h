@@ -20,8 +20,8 @@ public:
 		pixel00location = view_upperleft + 0.5 * (pdeltax + pdeltay);
 	}
 
-	ray getray(int i,int j) const{
-		vec3 pixel_center = pixel00location + j * pdeltay + i * pdeltax;
+	ray getray(double i,double j) const{
+		vec3 pixel_center = pixel00location + j * pdeltay + i * pdeltax; //viewport pixel coordinate
 
 		return ray(origin, pixel_center - origin);
 	}

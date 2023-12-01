@@ -6,7 +6,7 @@
 add_executable (myfirstraytracer "myfirstraytracer.cpp" 
 "include/myfirstraytracer.h" 
 "include/color.h" "include/vec3.h" "include/ray.h" "include/sphere.h" "sphere.cpp" "include/hitable.h"
-"include/stb_image.h" "include/stb_image_write.h" "include/camera.h" "include/material.h")
+"include/stb_image.h" "include/stb_image_write.h" "include/camera.h" "include/material.h" "include/scene.h")
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET myfirstraytracer PROPERTY CXX_STANDARD 20)

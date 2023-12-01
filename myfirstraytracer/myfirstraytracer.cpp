@@ -1,7 +1,4 @@
-﻿// myfirstraytracer.cpp : Defines the entry point for the application.
-//
-
-#include "include/myfirstraytracer.h"
+﻿#include "include/myfirstraytracer.h"
 
 bool hit_anything(const ray& r, std::vector<std::shared_ptr<hitable>> world, double tmin, double tmax, intersection& isect) {
     bool hit = false;
@@ -17,35 +14,55 @@ bool hit_anything(const ray& r, std::vector<std::shared_ptr<hitable>> world, dou
     return hit;
 }
 
-color traceray(ray r,std::vector<std::shared_ptr<hitable>> world) {
+vec3 random_in_unit_sphere() {
+    vec3 p;
+    do {
+        p = 2.0*vec3((double)rand() / RAND_MAX, (double)rand() / RAND_MAX, (double)rand() / RAND_MAX)-vec3(1,1,1);
+    } while (p.norm() >= 1.0);
+    return p;
+}
+
+
+
+color traceray(ray r,scene world) {
     intersection isect;
 
-    if (hit_anything(r, world, 0.001, (double)FLT_MAX, isect)) {
-        //return 0.5 * color(isect.hit_normal.x() + 1, isect.hit_normal.y() + 1, isect.hit_normal.z() + 1);
-        return color(1, 0, 0);
+    if (hit_anything(r, world.hitables, 0.001, (double)FLT_MAX, isect)) {
+        color pixelcolor = isect.hit_material.diffuse_color;
+        double diff = 1.0;
+        for (int i = 0; i < world.light_sources.size(); i++) {
+            vec3 L = world.light_sources[i] - isect.hit_position;
+            diff += dot(L, isect.hit_normal) > 0 ? dot(L, isect.hit_normal) : 0;
+        }
+        pixelcolor *= diff;
+
+        return pixelcolor;
     }
-    else {
-        vec3 unit_direction = r.direction.normalize();
+    else { //background
+        vec3 unit_direction = r.direction.normalize(); 
         double a = 0.5 * (double(unit_direction.y()) + 1.0);
-        //return (1.0 - a) * color(1.0, 1.0, 1.0) + a * color(0.5, 0.7, 1.0);
-        return color(0, 0, 0);
+        return (1.0 - a) * color(1.0, 1.0, 1.0) + a * color(0.5, 0.7, 1.0);
     }
 }
 
 int main() {
-    std::vector<std::shared_ptr<hitable>> world;
     
+    material red_reflective(color(1.0, 0.0, 0.0), 0.7, 0.0);
+    material green_reflective(color(0.0, 1.0, 0.0), 0.7, 0.0);
+
+    scene world;
     
     //add geometry 
-    world.push_back(std::make_shared<sphere>(sphere(vec3(0,0,-1),0.5)));
+    world.add_hitable(std::make_shared<sphere>(sphere(vec3(0,0,-1),0.5,red_reflective)));
+    world.add_hitable(std::make_shared<sphere>(sphere(vec3(0, -100.5, -1), 100,green_reflective)));
+    
 
     int n_channels = 3;
     auto aspect_ratio = 16.0 / 9.0;
-    int image_width = 256;
+    int image_width = 128;
     int image_height = static_cast<int>(image_width / aspect_ratio);
     image_height = (image_height < 1) ? 1 : image_height;
     auto viewport_height = 2.0;
-    auto viewport_width = viewport_height * (static_cast<double>(image_width) / image_height);
 
     uint8_t* pixels = new uint8_t[image_height*image_width*n_channels];
     double focal_length = 1.0;
