@@ -17,5 +17,23 @@ public:
 
 };
 
+inline ray getshadowray(const vec3& pos, const vec3& lightpos) {
+	vec3 L = lightpos - pos;
+	double Ldist = L.norm();
+	ray lightray(pos, L.normalize());
+	return lightray;
+}
+
+inline ray getreflectedray(const vec3& incident,const vec3& normal, const vec3& pos) {
+	double ref = dot(incident, normal) > 0 ? dot(incident, normal) : 0;
+	return ray(pos, incident - 2.0 * normal * ref);
+}
+
+inline ray getrefractedray(const vec3& incident, const vec3& normal, const vec3& pos, const double& ratio) {
+	double r = -dot(incident, normal);
+	double c = 1.0 - ratio * ratio * (1 - r * r);
+	vec3 dir = c > 0 ? ratio * incident + (ratio * r - sqrt(c)) * normal : getreflectedray(incident, normal, pos).direction;
+	return ray(pos, dir);
+}
 
 #endif

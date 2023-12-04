@@ -14,7 +14,7 @@ public:
 		
 	}
 
-	void add_hitable(std::shared_ptr<hitable> h) {}
+	void add_hitable(std::shared_ptr<hitable> h) { hitables.push_back(h); }
 	void add_light(vec3 lpos) { light_sources.push_back(lpos); }
 
 	std::vector<std::shared_ptr<hitable>> hitables;
