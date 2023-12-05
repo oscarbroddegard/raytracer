@@ -53,7 +53,7 @@ color traceray(ray r,scene world,int depth) {
         //refraction
         color refractedcolor;
         if (isect.hit_material.transparency > 0 && depth > 0) {
-            ray refractedray = getrefractedray(r.direction, isect.hit_normal, isect.hit_position, isect.hit_material.transparency);
+            ray refractedray = getrefractedray(r.direction, isect.hit_normal, isect.hit_position, isect.hit_material.refractive_index);
             refractedcolor = traceray(refractedray, world, depth - 1);
         }
 
@@ -71,8 +71,8 @@ color traceray(ray r,scene world,int depth) {
 
 int main() {
     
-    material red_reflective(color(0.7, 0.1, 0.0).normalize(), 0.5, 0.1);
-    material white_reflective(color(1, 1, 1).normalize(), 0.3, 0.5);
+    material red_reflective(color(0.7, 0.1, 0.0).normalize(), 0.5, 0.1,1.0);
+    material white_reflective(color(1, 1, 1).normalize(), 0.3, 0.5,1.3);
 
     scene world;
     

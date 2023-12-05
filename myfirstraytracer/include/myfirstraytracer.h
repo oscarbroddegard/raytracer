@@ -22,3 +22,4 @@
 #include "camera.h"
 #include "scene.h"
 #include "material.h"
+#include "triangle.h"
