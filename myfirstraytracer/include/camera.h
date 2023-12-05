@@ -8,28 +8,31 @@
 
 class camera {
 public:
-	camera(vec3 c,double focal_length, double image_width,double image_height, double viewport_height):origin(c) {
-		auto viewport_width = viewport_height * (static_cast<double>(image_width) / image_height);
-		vec3 viewport_u(viewport_width, 0, 0);
-		vec3 viewport_v(0, -viewport_height, 0);
+	camera(const vec3& o,const vec3& c,const vec3& u,const double& v,const double& a,int width,int height):
+		eye(o),lookat(c),fov(v),aspectratio(a),imageheight(height),imagewidth(width) {
+		
+		forward = (lookat - eye).normalize();
+		right = cross(forward, u).normalize();
+		up = cross(right, forward);
 
-		pdeltax = viewport_u / image_width;
-		pdeltay = viewport_v / image_height;
-
-		vec3 view_upperleft = origin - vec3(0, 0, focal_length) - viewport_u / 2 - viewport_v / 2;
-		pixel00location = view_upperleft + 0.5 * (pdeltax + pdeltay);
+		viewX = std::tan(0.5*fov*3.14159/180.0);
+		viewY = std::tan(0.5 * fov / aspectratio * 3.14159 / 180.0);
 	}
 
-	ray getray(double i,double j) const{
-		vec3 pixel_center = pixel00location + j * pdeltay + i * pdeltax; //viewport pixel coordinate
-
-		return ray(origin, pixel_center - origin);
+	ray getray(double x,double y) const{
+		vec3 pdeltax = 2.0 / ((double)imagewidth) * viewX * right;
+		vec3 pdeltay = -2.0 / ((double)imageheight) * viewX * up;
+		vec3 view = forward - viewX * right + viewY * up;
+		return ray(eye, view + x * pdeltax + y * pdeltay);
 	}
 private:
-	vec3 origin;
-	vec3 pdeltax;
-	vec3 pdeltay;
-	vec3 pixel00location;
+	vec3 eye,lookat,up,forward,right;
+	double fov;
+	double aspectratio;
+	double viewX;
+	double viewY;
+	int imagewidth;
+	int imageheight;
 };
 
 #endif

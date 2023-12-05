@@ -15,7 +15,7 @@ bool triangle::hit(const ray& r, double tmin, double tmax, intersection& isect) 
 	double w = dot(W, N);
 	double inside = (V.norm() + W.norm()) / N.norm();
 
-	if (v > 0 && w > 0 && inside > 0 && t < tmax && t > tmin) {
+	if (v > 0 && w > 0 && inside < 1 && t < tmax && t > tmin) {
 		isect.hit_t = t;
 		isect.hit_normal = dot(-r.direction,N) > 0.0 ? N.normalize() : -N.normalize();
 		isect.hit_position = Q;
