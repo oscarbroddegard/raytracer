@@ -101,8 +101,8 @@ int main() {
     world.add_hitable(std::make_shared<sphere>(sphere(vec3(7.0, 3.0, 0.0), 3.0, yellowReflective)));
     world.add_hitable(std::make_shared<sphere>(sphere(vec3(9.0, 10.0, 0.0), 3.0, yellowReflective)));
 
-    //world.add_hitable(std::make_shared<sphere>(sphere(vec3(-7.0, 3.0, 0.0), 3.0, transparent)));
-    //world.add_hitable(std::make_shared<sphere>(sphere(vec3(-9.0, 10.0, 0.0), 3.0, transparent)));
+    world.add_hitable(std::make_shared<sphere>(sphere(vec3(-7.0, 3.0, 0.0), 3.0, transparent)));
+    world.add_hitable(std::make_shared<sphere>(sphere(vec3(-9.0, 10.0, 0.0), 3.0, transparent)));
 
     world.add_light(vec3(0.0, 30.0, -5.0));
     //world.add_light(vec3(2.0, 1.0, -1.0));
@@ -110,7 +110,7 @@ int main() {
 
     int n_channels = 3;
     auto aspect_ratio = 1.0;
-    int image_width = 256;
+    int image_width = 512;
     int image_height = static_cast<int>(image_width / aspect_ratio);
     image_height = (image_height < 1) ? 1 : image_height;
 
@@ -124,11 +124,12 @@ int main() {
     camera myCamera(eye, lookAt, up, 52.0, aspect_ratio,image_width,image_height);
     const int depth = 4;
 
+    std::clog << "Starting render" << std::endl;
     auto starttime = std::chrono::high_resolution_clock::now();
-
+    
     for (int j = 0; j < image_height; j++) {
         for (int i = 0; i < image_width; i++) {
-            std::clog << "\rProgress: " << int(100 * (double(j * (image_width + 1)) + double(i)) / double(image_height * image_width)) << "%" << std::flush;
+            //std::clog << "\rProgress: " << int(100 * (double(j * (image_width + 1)) + double(i)) / double(image_height * image_width)) << "%" << std::flush;
 
             //ray r(camera_center, pixel_center - camera_center);
             ray r = myCamera.getray(((double)i)+0.5, ((double)j) + 0.5);
@@ -139,7 +140,7 @@ int main() {
 
         }
     }
-    std::clog << '\n';
+    std::clog << std::flush;
 
     //get time for performance log
     auto endtime = std::chrono::high_resolution_clock::now();
@@ -147,7 +148,7 @@ int main() {
 
     std::clog << "Done! Duration: " << duration << "s" << "\n";
 
-    stbi_write_png("C:/Users/oscar/source/repos/myfirstraytracer/out/out.png",image_width,image_height,n_channels,pixels,image_width*n_channels);
+    stbi_write_png("C:/Users/oscar/source/repos/oscarbroddegard/raytracer/out/out.png",image_width,image_height,n_channels,pixels,image_width*n_channels);
 
     delete[] pixels; //phew
 

@@ -25,7 +25,7 @@ inline ray getshadowray(const vec3& pos, const vec3& lightpos) {
 }
 
 inline ray getreflectedray(const vec3& incident,const vec3& normal, const vec3& pos) {
-	double ref = dot(incident, normal) > 0 ? dot(incident, normal) : 0;
+	double ref = dot(incident, normal);
 	return ray(pos, incident - 2.0 * normal * ref);
 }
 
