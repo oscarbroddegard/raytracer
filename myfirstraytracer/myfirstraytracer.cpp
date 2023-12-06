@@ -27,7 +27,7 @@ vec3 random_in_unit_sphere() {
 color traceray(ray r,scene world,int depth) {
     intersection isect,shadow;
 
-    if (hit_anything(r, world.hitables, 0.001, FLT_MAX, isect)) {
+    if (hit_anything(r, world.hitables, 0.01, FLT_MAX, isect)) {
         color pixelcolor = isect.hit_material.diffuse_color;
 
         //shadowing and lighting
@@ -36,11 +36,11 @@ color traceray(ray r,scene world,int depth) {
         for (int i = 0; i < world.light_sources.size(); i++) {
             vec3 L = world.light_sources[i] - isect.hit_position;
             ray shadowray = getshadowray(isect.hit_position,world.light_sources[i]);
-            if (hit_anything(shadowray, world.hitables, 0.001, L.norm(), shadow)) {
+            if (hit_anything(shadowray, world.hitables, 0.01, L.norm(), shadow)) {
                 diff = 0.0;
                 break;
             }
-            diff += dot(L, isect.hit_normal) > 0 ? dot(L, isect.hit_normal) : 0;
+            diff += dot(L.normalize(), isect.hit_normal) > 0 ? dot(L, isect.hit_normal) : 0;
         }
         pixelcolor *= diff;
 
@@ -58,7 +58,7 @@ color traceray(ray r,scene world,int depth) {
             refractedcolor = traceray(refractedray, world, depth - 1);
         }
 
-        pixelcolor = (1 - isect.hit_material.reflectivity - isect.hit_material.transparency) * pixelcolor + isect.hit_material.reflectivity * refcolor + isect.hit_material.transparency * refractedcolor;
+        pixelcolor = (1-isect.hit_material.transparency-isect.hit_material.reflectivity)*pixelcolor + isect.hit_material.reflectivity * refcolor + isect.hit_material.transparency * refractedcolor;
         
 
         return 0.5*pixelcolor;
@@ -80,12 +80,29 @@ int main() {
     scene world;
     
     //add geometry 
-    world.add_hitable(std::make_shared<sphere>(sphere(vec3(0,3,-20),3,redDiffuse)));
-    //world.add_hitable(std::make_shared<sphere>(sphere(vec3(0, -100.5, -1), 100,white_reflective)));
-    world.add_hitable(std::make_shared<triangle>(triangle(vec3(-20.0,0.0,50.0),vec3(20.0,0.0,50.0),vec3(20.0,0.0,-50.0),whiteDiffuse)));
+    world.add_hitable(std::make_shared<sphere>(sphere(vec3(0, 3, -20), 3.0, redDiffuse)));
+    world.add_hitable(std::make_shared<sphere>(sphere(vec3(-7.0, 3.0, -20.0), 3.0, blueDiffuse)));
+    world.add_hitable(std::make_shared<sphere>(sphere(vec3(7.0, 3.0, -20.0), 3.0, greenDiffuse)));
+    world.add_hitable(std::make_shared<triangle>(triangle(vec3(-20.0,0.0,50.0),vec3(20.0,0.0,50.0),vec3(20.0,0.0,-50.0),whiteDiffuse))); //floor
     world.add_hitable(std::make_shared<triangle>(triangle(vec3(-20.0, 0.0, 50.0), vec3(20.0, 0.0, -50.0), vec3(-20.0, 0.0, -50.0), whiteDiffuse)));
-    world.add_hitable(std::make_shared<triangle>(triangle(vec3(-20.0, 0.0, -50.0), vec3(20.0, 0.0, -50.0), vec3(20.0, 40.0, -50.0), whiteDiffuse)));
+
+    world.add_hitable(std::make_shared<triangle>(triangle(vec3(-20.0, 0.0, -50.0), vec3(20.0, 0.0, -50.0), vec3(20.0, 40.0, -50.0), whiteDiffuse))); //back wall
     world.add_hitable(std::make_shared<triangle>(triangle(vec3(-20.0, 0.0, -50.0), vec3(20.0, 40.0, -50.0), vec3(-20.0, 40.0, -50.0), whiteDiffuse)));
+
+    world.add_hitable(std::make_shared<triangle>(triangle(vec3(-20.0, 40.0, 50.0), vec3(-20.0, 40.0, -50.0), vec3(20.0, 40.0, 50.0), whiteDiffuse))); //ceiling
+    world.add_hitable(std::make_shared<triangle>(triangle(vec3(20.0, 40.0, 50.0), vec3(-20.0, 40.0, -50.0), vec3(20.0, 40.0, -50.0), whiteDiffuse)));
+
+    world.add_hitable(std::make_shared<triangle>(triangle(vec3(-20.0, 0.0, 50.0), vec3(-20.0, 40.0, -50.0), vec3(-20.0, 40.0, 50.0), redDiffuse))); // red wall
+    world.add_hitable(std::make_shared<triangle>(triangle(vec3(-20.0, 0.0, 50.0), vec3(-20.0, 0.0, -50.0), vec3(-20.0, 40.0, -50.0), redDiffuse)));
+
+    world.add_hitable(std::make_shared<triangle>(triangle(vec3(20.0, 0.0, 50.0), vec3(20.0, 40.0, -50.0), vec3(20.0, 40.0, 50.0), greenDiffuse))); // green wall
+    world.add_hitable(std::make_shared<triangle>(triangle(vec3(20.0, 0.0, 50.0), vec3(20.0, 0.0, -50.0), vec3(20.0, 40.0, -50.0), greenDiffuse)));
+
+    world.add_hitable(std::make_shared<sphere>(sphere(vec3(7.0, 3.0, 0.0), 3.0, yellowReflective)));
+    world.add_hitable(std::make_shared<sphere>(sphere(vec3(9.0, 10.0, 0.0), 3.0, yellowReflective)));
+
+    //world.add_hitable(std::make_shared<sphere>(sphere(vec3(-7.0, 3.0, 0.0), 3.0, transparent)));
+    //world.add_hitable(std::make_shared<sphere>(sphere(vec3(-9.0, 10.0, 0.0), 3.0, transparent)));
 
     world.add_light(vec3(0.0, 30.0, -5.0));
     //world.add_light(vec3(2.0, 1.0, -1.0));
@@ -105,6 +122,7 @@ int main() {
     vec3 lookAt(0.0f, 10.0f, -5.0f);
     vec3 up(0.0f, 1.0f, 0.0f);
     camera myCamera(eye, lookAt, up, 52.0, aspect_ratio,image_width,image_height);
+    const int depth = 4;
 
     auto starttime = std::chrono::high_resolution_clock::now();
 
@@ -115,7 +133,7 @@ int main() {
             //ray r(camera_center, pixel_center - camera_center);
             ray r = myCamera.getray(((double)i)+0.5, ((double)j) + 0.5);
         
-            color pixelcolor = traceray(r,world,4);
+            color pixelcolor = traceray(r,world,depth);
 
             write_color((j*image_width + i)*n_channels, pixelcolor,pixels);
 
