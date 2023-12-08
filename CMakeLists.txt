@@ -11,6 +11,10 @@ endif()
 
 project ("myfirstraytracer" LANGUAGES CXX CUDA)
 
+find_package(CUDA REQUIRED)
+
+
+
 # Include sub-projects.
 add_subdirectory ("myfirstraytracer")
 add_subdirectory("raytracerCUDA")

@@ -1,4 +1,6 @@
-#include "headers/raytracer_cuda.h"
+#include "raytracer_cuda.h"
+
+#include "cuda_runtime.h"
 
 bool hit_anything(const ray& r, std::vector<std::shared_ptr<hitable>> hitables, double tmin, double tmax, intersection& isect) {
     bool hit = false;
