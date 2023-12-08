@@ -8,7 +8,7 @@
 
 class camera {
 public:
-	camera(const vec3& o,const vec3& c,const vec3& u,const double& v,const double& a,int width,int height):
+	__host__ __device__ camera(const vec3& o,const vec3& c,const vec3& u,const double& v,const double& a,int width,int height):
 		eye(o),lookat(c),fov(v),aspectratio(a),imageheight(height),imagewidth(width) {
 		
 		forward = (lookat - eye).normalize();
@@ -19,7 +19,7 @@ public:
 		viewY = std::tan(0.5 * fov / aspectratio * 3.14159 / 180.0);
 	}
 
-	ray getray(double x,double y) const{
+	__host__ __device__ ray getray(double x,double y) const{
 		vec3 pdeltax = 2.0 / ((double)imagewidth) * viewX * right;
 		vec3 pdeltay = -2.0 / ((double)imageheight) * viewX * up;
 		vec3 view = forward - viewX * right + viewY * up;

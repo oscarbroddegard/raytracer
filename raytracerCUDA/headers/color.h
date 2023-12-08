@@ -11,13 +11,13 @@
 #include "vec3.h"
 using color = vec3;
 
-inline double clamp(double x, double min, double max) {
+__global__ inline double clamp(double x, double min, double max) {
     if (x < min) return min;
     if (x > max) return max;
     return x;
 }
 
-inline void write_color(int index, color& c, uint8_t* pixels) {
+__global__ inline void write_color(int index, color& c, uint8_t* pixels) {
     // Write the translated [0,255] value of each color component.
     
     for (int n = 0; n < 3; n++) {

@@ -13,7 +13,7 @@ public:
 	__device__ ray() {}
 	__device__ ray(const vec3& o, const vec3& d) :direction(d), origin(o) {}
 
-	__device__ vec3 at(double t) const { return origin + t * direction; }
+	__device__ vec3 at(float t) const { return origin + t * direction; }
 
 };
 
@@ -25,8 +25,8 @@ __device__ inline ray getshadowray(const vec3& pos, const vec3& lightpos) {
 }
 
 __device__ inline ray getreflectedray(const vec3& incident,const vec3& normal, const vec3& pos) {
-	double ref = dot(incident, normal);
-	return ray(pos, incident - 2.0 * normal * ref);
+	float ref = dot(incident, normal);
+	return ray(pos, incident - 2.0f * normal * ref);
 }
 
 __device__ inline ray getrefractedray(const vec3& incident, const vec3& normal, const vec3& pos, const float& ratio) {

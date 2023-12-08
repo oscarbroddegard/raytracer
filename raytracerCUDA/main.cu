@@ -2,7 +2,7 @@
 
 #include "cuda_runtime.h"
 
-bool hit_anything(const ray& r, std::vector<std::shared_ptr<hitable>> hitables, double tmin, double tmax, intersection& isect) {
+__device__ bool hit_anything(const ray& r, std::vector<std::shared_ptr<hitable>> hitables, double tmin, double tmax, intersection& isect) {
     bool hit = false;
     intersection temp_isect;
     double closest_t = tmax;
@@ -16,7 +16,7 @@ bool hit_anything(const ray& r, std::vector<std::shared_ptr<hitable>> hitables, 
     return hit;
 }
 
-color traceray(ray r, scene world, int depth) {
+__device__ color traceray(ray r, scene world, int depth) {
     intersection isect, shadow;
 
     if (hit_anything(r, world.hitables, 0.01, FLT_MAX, isect)) {
@@ -58,6 +58,10 @@ color traceray(ray r, scene world, int depth) {
     else { //background
         return color(0.0, 0.0, 0.0);
     }
+}
+
+__global__ void render(camera CUDAcam,scene world) {
+
 }
 
 int main() {
