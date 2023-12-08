@@ -23,7 +23,7 @@ public:
 		vec3 pdeltax = 2.0 / ((double)imagewidth) * viewX * right;
 		vec3 pdeltay = -2.0 / ((double)imageheight) * viewX * up;
 		vec3 view = forward - viewX * right + viewY * up;
-		return ray(eye, view + x * pdeltax + y * pdeltay);
+		return ray(eye, (view + x * pdeltax + y * pdeltay).normalize());
 	}
 private:
 	vec3 eye,lookat,up,forward,right;
