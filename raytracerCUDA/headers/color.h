@@ -7,6 +7,7 @@
 #include <iostream>
 #include <math.h>
 
+#include "device_launch_parameters.h"
 #include "vec3.h"
 using color = vec3;
 

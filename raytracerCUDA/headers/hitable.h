@@ -3,6 +3,7 @@
 #ifndef HITABLE_H
 #define HITABLE_H
 
+#include "device_launch_parameters.h"
 #include "color.h"
 #include "vec3.h"
 #include "ray.h"
