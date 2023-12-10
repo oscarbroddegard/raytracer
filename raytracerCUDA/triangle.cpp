@@ -2,7 +2,7 @@
 
 #include "headers/triangle.h"
 
-bool triangle::hit(const ray& r, double tmin, double tmax, intersection& isect) {
+__device__ bool triangle::hit(const ray& r, double tmin, double tmax, intersection& isect) {
 	vec3 e1 = vertices[1] - vertices[0];
 	vec3 e2 = vertices[2] - vertices[0];
 	vec3 N = cross(e1, e2);

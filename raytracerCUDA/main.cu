@@ -2,49 +2,41 @@
 
 #include "cuda_runtime.h"
 
-__device__ bool hit_anything(const ray& r, std::vector<std::shared_ptr<hitable>> hitables, double tmin, double tmax, intersection& isect) {
-    bool hit = false;
-    intersection temp_isect;
-    double closest_t = tmax;
-    for (int k = 0; k < hitables.size(); k++) {
-        if (hitables[k]->hit(r, tmin, closest_t, temp_isect)) {
-            hit = true;
-            closest_t = temp_isect.hit_t;
-            isect = temp_isect;
-        }
-    }
-    return hit;
-}
 
-__device__ color traceray(ray r, scene world, int depth) {
+// TODO: change hitable list to **hitable, since it seems to cause trouble with host/device functionality
+
+
+
+
+__device__ vec3 traceray(ray r, hitable** world, int depth) {
     intersection isect, shadow;
 
-    if (hit_anything(r, world.hitables, 0.01, FLT_MAX, isect)) {
-        color pixelcolor = isect.hit_material.diffuse_color;
+    if ((*world)->hit(r, 0.01, FLT_MAX, isect)) {
+        vec3 pixelcolor = isect.hit_material.diffuse_color;
 
         //shadowing and lighting
         double diff = 0.0;
         double shadowed = 0.0;
-        for (int i = 0; i < world.light_sources.size(); i++) {
-            vec3 L = world.light_sources[i] - isect.hit_position;
-            ray shadowray = getshadowray(isect.hit_position, world.light_sources[i]);
-            if (hit_anything(shadowray, world.hitables, 0.001, L.norm(), shadow)) {
-                diff = 0.0;
-                break;
-            }
+        vec3 light_source(0.0, 30.0, -2.0);
+        vec3 L = light_source - isect.hit_position;
+        ray shadowray = getshadowray(isect.hit_position, light_source);
+        if ((*world)->hit(r, 0.01, L.norm(), shadow)) {
+            diff = 0.0;
+        }
+        else {
             diff += dot(L.normalize(), isect.hit_normal) > 0 ? dot(L.normalize(), isect.hit_normal) : 0;
         }
         pixelcolor *= diff;
 
         //reflection
-        color refcolor;
+        vec3 refcolor;
         if (isect.hit_material.reflectivity > 0 && depth > 0) {
             ray reflectedray = getreflectedray(r.direction.normalize(), isect.hit_normal, isect.hit_position);
             refcolor = traceray(reflectedray, world, depth - 1);
         }
 
         //refraction
-        color refractedcolor;
+        vec3 refractedcolor;
         if (isect.hit_material.transparency > 0 && depth > 0) {
             ray refractedray = getrefractedray(r.direction.normalize(), isect.hit_normal, isect.hit_position, isect.hit_material.refractive_index);
             refractedcolor = traceray(refractedray, world, depth - 1);
@@ -56,24 +48,26 @@ __device__ color traceray(ray r, scene world, int depth) {
         return 0.5 * pixelcolor;
     }
     else { //background
-        return color(0.0, 0.0, 0.0);
+        return vec3(0.0, 0.0, 0.0);
     }
 }
 
-__global__ void render(camera CUDAcam,scene world) {
-
+__global__ void render(hitable** scenebuffer, vec3* framebuffer, camera** CUDAcam, int image_width, int image_height,int depth = 4) {
+    int i = threadIdx.x + blockIdx.x * blockDim.x;
+    int j = threadIdx.y + blockIdx.y * blockDim.y;
+    if ((i >= image_width) || (j >= image_height)) return;
+    ray r = (*CUDAcam)->getray(((float)i) + 0.5, ((float)j) + 0.5);
+    int pidx = j * image_width + i;
+    framebuffer[pidx] = traceray(r, scenebuffer, depth);
 }
 
-int main() {
-
+void createScene(scene world) {
     material whiteDiffuse = material(color(0.9f, 0.9f, 0.9f), 0.0f, 0.0f, 1.0f);
     material greenDiffuse = material(color(0.1f, 0.6f, 0.1f), 0.0f, 0.0f, 1.0f);
     material redDiffuse = material(color(1.0f, 0.1f, 0.1f), 0.0f, 0.0f, 1.0f);
     material blueDiffuse = material(color(0.0f, 0.2f, 0.9f), 0.0f, 0.0f, 1.0f);
     material yellowReflective = material(color(1.0f, 0.6f, 0.1f), 0.2f, 0.0f, 1.0f);
     material transparent = material(color(1.0f, 1.0f, 1.0f), 0.2f, 0.8f, 1.3f);
-
-    scene world;
 
     //add geometry 
     world.add_hitable(std::make_shared<sphere>(sphere(vec3(0, 3, -20), 3.0, redDiffuse)));
@@ -102,6 +96,17 @@ int main() {
 
     world.add_light(vec3(0.0, 30.0, -2.0));
     //world.add_light(vec3(2.0, 1.0, -1.0));
+}
+
+int main() {
+
+    
+
+    scene world;
+
+    createScene(world);
+
+    
 
 
     int n_channels = 3;
@@ -109,33 +114,41 @@ int main() {
     int image_width = 512;
     int image_height = static_cast<int>(image_width / aspect_ratio);
     image_height = (image_height < 1) ? 1 : image_height;
+    int n_pixels = image_height * image_width;
 
-    uint8_t* pixels = new uint8_t[image_height * image_width * n_channels];
-    double focal_length = 1.0;
+    //set up framebuffer
+    vec3 *framebuffer;
+    size_t fb_size = sizeof(vec3) * n_pixels;
+    checkCudaErrors(cudaMallocManaged((void**)&framebuffer, fb_size));
+
+    //set up thread block sizes
+    int threads_x = 8;
+    int threads_y = 8;
+    dim3 blocks(image_width / threads_x + 1, image_height / threads_y + 1);
+    dim3 threads(threads_x, threads_y);
 
     //place a camera at the origin (0,0,0)
     vec3 eye(0.0f, 10.0f, 30.0f);
     vec3 lookAt(0.0f, 10.0f, -5.0f);
     vec3 up(0.0f, 1.0f, 0.0f);
-    camera myCamera(eye, lookAt, up, 52.0, aspect_ratio, image_width, image_height);
-    const int depth = 4;
+    camera** camerabuffer;
+    *camerabuffer = new camera(eye, lookAt, up, 52.0, aspect_ratio, image_width, image_height);
+    checkCudaErrors(cudaMalloc((void**) &camerabuffer, sizeof(camera*)));
+    
+    //set up scenebuffer
+    hitable** scenebuffer;
+    bindSceneBuffer<<<1, 1>>>(world.hitables[0].get(), world.hitables.size(), scenebuffer);
+    checkCudaErrors(cudaMalloc((void**)scenebuffer, world.hitables.size()*sizeof(hitable*)));
+
 
     std::clog << "Starting render" << std::endl;
     auto starttime = std::chrono::high_resolution_clock::now();
+    //send everything to GPU
+    render<<<blocks, threads >>>(scenebuffer,framebuffer,camerabuffer,image_width,image_height);
+    //failsafe
+    checkCudaErrors(cudaGetLastError());
+    checkCudaErrors(cudaDeviceSynchronize());
 
-    for (int j = 0; j < image_height; j++) {
-        for (int i = 0; i < image_width; i++) {
-            //std::clog << "\rProgress: " << int(100 * (double(j * (image_width + 1)) + double(i)) / double(image_height * image_width)) << "%" << std::flush;
-
-            //ray r(camera_center, pixel_center - camera_center);
-            ray r = myCamera.getray(((double)i) + 0.5, ((double)j) + 0.5);
-
-            color pixelcolor = traceray(r, world, depth);
-
-            write_color((j * image_width + i) * n_channels, pixelcolor, pixels);
-
-        }
-    }
     std::clog << std::flush;
 
     //get time for performance log
@@ -144,9 +157,28 @@ int main() {
 
     std::clog << "Done! Duration: " << duration << "s" << "\n";
 
+    //pixel buffer to export to image
+    uint8_t* pixels = new uint8_t[n_channels*n_pixels];
+    
+    // write to image
+    for (int j = 0; j < image_height; j++) {
+        for (int i = 0; i < image_width; i++) {
+            color pixelcolor = framebuffer[(j * image_width + i)];
+
+            write_color((j * image_width + i) * n_channels, pixelcolor, pixels);
+
+        }
+    }
+
     stbi_write_png("C:/Users/oscar/source/repos/myfirstraytracer/out/out_cuda.png", image_width, image_height, n_channels, pixels, image_width * n_channels);
 
     delete[] pixels; //phew
+
+    checkCudaErrors(cudaDeviceSynchronize());
+    freeBuffers<<<1, 1 >>>(scenebuffer, world.hitables.size(),camerabuffer);
+    checkCudaErrors(cudaGetLastError());
+    checkCudaErrors(cudaFree(scenebuffer));
+    checkCudaErrors(cudaFree(framebuffer));
 
     return 0;
 }

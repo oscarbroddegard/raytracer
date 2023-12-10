@@ -1,6 +1,6 @@
 #include "headers/sphere.h"
 
-bool sphere::hit(const ray& r,double tmin,double tmax,intersection& isect) {
+__device__ bool sphere::hit(const ray& r,double tmin,double tmax,intersection& isect) {
 	vec3 OC = r.origin - center;
 	double a = dot(r.direction, r.direction);
 	double b = dot(OC, r.direction);

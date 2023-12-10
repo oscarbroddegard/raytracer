@@ -7,10 +7,10 @@
 
 class material {
 public:
-	material() {}
-	material(color c, double r,double t,double i):diffuse_color(c),reflectivity(r),transparency(t),refractive_index(i) {}
+	__host__ __device__ material() {}
+	__host__ __device__ material(vec3 c, double r,double t,double i):diffuse_color(c),reflectivity(r),transparency(t),refractive_index(i) {}
 
-	color diffuse_color;
+	vec3 diffuse_color;
 	double reflectivity;
 	double transparency;
 	double refractive_index;

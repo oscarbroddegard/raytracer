@@ -28,3 +28,32 @@
 #include "headers/scene.h"
 #include "headers/material.h"
 #include "headers/triangle.h"
+
+
+// helper functions
+
+#define checkCudaErrors(val) check_cuda( (val), #val, __FILE__, __LINE__ )
+void check_cuda(cudaError_t result, char const* const func, const char* const file, int const line) {
+    if (result) {
+        std::cerr << "CUDA error = " << static_cast<unsigned int>(result) << " at " <<
+            file << ":" << line << " '" << func << "' \n";
+        // Make sure we call CUDA Device Reset before exiting
+        cudaDeviceReset();
+        exit(99);
+    }
+}
+
+__global__ void bindSceneBuffer(hitable* world,int n_hitables, hitable** buffer_ptr) {
+    if (threadIdx.x == 0 && blockIdx.x == 0) {
+        for (int n = 0; n < n_hitables; n++) {
+            *(buffer_ptr + n) = &world[n];
+        }
+    }
+}
+
+__global__ void freeBuffers(hitable** scenebuffer, int sb_size,camera** cam_ptr) {
+    for (int n = 0; n < sb_size; n++) {
+        delete* (scenebuffer + n);
+    }
+    delete* cam_ptr;
+}
