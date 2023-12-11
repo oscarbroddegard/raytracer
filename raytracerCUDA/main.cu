@@ -5,7 +5,7 @@ __device__ vec3 traceray(ray r, hitable** world, int depth) {
     intersection isect, shadow;
 
     if ((*world)->hit(r, 0.01, FLT_MAX, isect)) {
-        vec3 pixelcolor = isect.hit_material.diffuse_color;
+        vec3 pixelcolor = isect.hit_material->diffuse_color;
 
         //shadowing and lighting
         float diff = 0.0;
@@ -22,19 +22,19 @@ __device__ vec3 traceray(ray r, hitable** world, int depth) {
 
         //reflection
         vec3 refcolor;
-        if (isect.hit_material.reflectivity > 0 && depth > 0) {
+        if (isect.hit_material->reflectivity > 0 && depth > 0) {
             ray reflectedray = getreflectedray(r.direction.normalize(), isect.hit_normal, isect.hit_position);
             refcolor = traceray(reflectedray, world, depth - 1);
         }
 
         //refraction
         vec3 refractedcolor;
-        if (isect.hit_material.transparency > 0 && depth > 0) {
-            ray refractedray = getrefractedray(r.direction.normalize(), isect.hit_normal, isect.hit_position, isect.hit_material.refractive_index);
+        if (isect.hit_material->transparency > 0 && depth > 0) {
+            ray refractedray = getrefractedray(r.direction.normalize(), isect.hit_normal, isect.hit_position, isect.hit_material->refractive_index);
             refractedcolor = traceray(refractedray, world, depth - 1);
         }
 
-        pixelcolor = (1 - isect.hit_material.transparency - isect.hit_material.reflectivity) * pixelcolor + isect.hit_material.reflectivity * refcolor + isect.hit_material.transparency * refractedcolor;
+        pixelcolor = (1 - isect.hit_material->transparency - isect.hit_material->reflectivity) * pixelcolor + isect.hit_material->reflectivity * refcolor + isect.hit_material->transparency * refractedcolor;
 
 
         return 0.5 * pixelcolor;
@@ -67,9 +67,9 @@ __global__ void bindSceneBuffer(hitable** hitlist, hitable** buffer_ptr, camera*
     material transparent = material(color(1.0f, 1.0f, 1.0f), 0.2f, 0.8f, 1.3f);
 
     //add geometry 
-    *hitlist = new sphere(vec3(0, 3, -20), 3.0f, material(color(1.0f, 0.1f, 0.1f), 0.0f, 0.0f, 1.0f));
-    *(hitlist + 1) = new sphere(vec3(-7.0f, 3.0f, -20.0f), 3.0f, material(color(0.0f, 0.2f, 0.9f), 0.0f, 0.0f, 1.0f));
-    *(hitlist + 2) = new sphere(vec3(7.0f, 3.0f, -20.0f), 3.0f, material(color(0.1f, 0.6f, 0.1f), 0.0f, 0.0f, 1.0f));
+    *hitlist = new sphere(vec3(0, 3, -20), 3.0f, new material(color(1.0f, 0.1f, 0.1f), 0.0f, 0.0f, 1.0f));
+    *(hitlist + 1) = new sphere(vec3(-7.0f, 3.0f, -20.0f), 3.0f, new material(color(0.0f, 0.2f, 0.9f), 0.0f, 0.0f, 1.0f));
+    *(hitlist + 2) = new sphere(vec3(7.0f, 3.0f, -20.0f), 3.0f, new material(color(0.1f, 0.6f, 0.1f), 0.0f, 0.0f, 1.0f));
     *buffer_ptr = new hitable_list(hitlist, 22 * 22 + 1 + 3);
     /*world.add_hitable(std::make_shared<triangle>(triangle(vec3(-20.0, 0.0, 50.0), vec3(20.0, 0.0, 50.0), vec3(20.0, 0.0, -50.0), whiteDiffuse))); //floor
     world.add_hitable(std::make_shared<triangle>(triangle(vec3(-20.0, 0.0, 50.0), vec3(20.0, 0.0, -50.0), vec3(-20.0, 0.0, -50.0), whiteDiffuse)));

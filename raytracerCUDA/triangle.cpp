@@ -19,7 +19,7 @@
 		isect.hit_t = t;
 		isect.hit_normal = dot(-r.direction,N) > 0.0 ? N.normalize() : -N.normalize();
 		isect.hit_position = Q;
-		isect.hit_material = triangle_material;
+		isect.hit_material = &triangle_material;
 		return true;
 	}
 	return false;
