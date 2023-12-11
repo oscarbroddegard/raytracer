@@ -10,13 +10,13 @@
 class sphere: public hitable {
 public:
 	vec3 center;
-	double radius;
+	float radius;
 	material sphere_material;
 
-	__host__ __device__ sphere() {}
-	__host__ __device__ sphere(const vec3& c, const double& r,const material& m) :center(c), radius(r), sphere_material(m) {}
+	__device__ sphere() {}
+	__device__ sphere(const vec3& c, const float& r,const material& m) :center(c), radius(r), sphere_material(m) {}
 
-	__device__ virtual bool hit(const ray& r,double tmin,double tmax, intersection& isect);
+	__device__ virtual bool hit(const ray& r,float tmin,float tmax, intersection& isect);
 };
 
 #endif

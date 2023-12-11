@@ -18,7 +18,6 @@ struct intersection {
 
 class hitable {
 public:
-	__device__ virtual bool hit(const ray& r, double tmin, double tmax, intersection& isect) = 0;
+	__device__ virtual bool hit(const ray& r, float tmin, float tmax, intersection& isect) = 0;
 };
-
 #endif

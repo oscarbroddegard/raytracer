@@ -25,7 +25,7 @@ public:
 		vec3 view = forward - viewX * right + viewY * up;
 		return ray(eye, (view + x * pdeltax + y * pdeltay).normalize());
 	}
-private:
+
 	vec3 eye,lookat,up,forward,right;
 	float fov, aspectratio, viewX, viewY;
 	int imagewidth, imageheight;

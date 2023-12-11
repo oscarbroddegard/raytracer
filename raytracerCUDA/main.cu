@@ -1,12 +1,5 @@
 #include "raytracer_cuda.h"
 
-#include "cuda_runtime.h"
-
-
-// TODO: change hitable list to **hitable, since it seems to cause trouble with host/device functionality
-
-
-
 
 __device__ vec3 traceray(ray r, hitable** world, int depth) {
     intersection isect, shadow;
@@ -15,8 +8,7 @@ __device__ vec3 traceray(ray r, hitable** world, int depth) {
         vec3 pixelcolor = isect.hit_material.diffuse_color;
 
         //shadowing and lighting
-        double diff = 0.0;
-        double shadowed = 0.0;
+        float diff = 0.0;
         vec3 light_source(0.0, 30.0, -2.0);
         vec3 L = light_source - isect.hit_position;
         ray shadowray = getshadowray(isect.hit_position, light_source);
@@ -61,7 +53,12 @@ __global__ void render(hitable** scenebuffer, vec3* framebuffer, camera** CUDAca
     framebuffer[pidx] = traceray(r, scenebuffer, depth);
 }
 
-void createScene(scene world) {
+__global__ void bindSceneBuffer(hitable** hitlist, hitable** buffer_ptr, camera** camerabuffer) {
+    vec3 eye(0.0f, 10.0f, 30.0f);
+    vec3 lookAt(0.0f, 10.0f, -5.0f);
+    vec3 up(0.0f, 1.0f, 0.0f);
+    *camerabuffer = new camera(eye, lookAt, up, 52.0f, 1.0f, 512, 512);
+
     material whiteDiffuse = material(color(0.9f, 0.9f, 0.9f), 0.0f, 0.0f, 1.0f);
     material greenDiffuse = material(color(0.1f, 0.6f, 0.1f), 0.0f, 0.0f, 1.0f);
     material redDiffuse = material(color(1.0f, 0.1f, 0.1f), 0.0f, 0.0f, 1.0f);
@@ -70,10 +67,11 @@ void createScene(scene world) {
     material transparent = material(color(1.0f, 1.0f, 1.0f), 0.2f, 0.8f, 1.3f);
 
     //add geometry 
-    world.add_hitable(std::make_shared<sphere>(sphere(vec3(0, 3, -20), 3.0, redDiffuse)));
-    world.add_hitable(std::make_shared<sphere>(sphere(vec3(-7.0, 3.0, -20.0), 3.0, blueDiffuse)));
-    world.add_hitable(std::make_shared<sphere>(sphere(vec3(7.0, 3.0, -20.0), 3.0, greenDiffuse)));
-    world.add_hitable(std::make_shared<triangle>(triangle(vec3(-20.0, 0.0, 50.0), vec3(20.0, 0.0, 50.0), vec3(20.0, 0.0, -50.0), whiteDiffuse))); //floor
+    *hitlist = new sphere(vec3(0, 3, -20), 3.0f, material(color(1.0f, 0.1f, 0.1f), 0.0f, 0.0f, 1.0f));
+    *(hitlist + 1) = new sphere(vec3(-7.0f, 3.0f, -20.0f), 3.0f, material(color(0.0f, 0.2f, 0.9f), 0.0f, 0.0f, 1.0f));
+    *(hitlist + 2) = new sphere(vec3(7.0f, 3.0f, -20.0f), 3.0f, material(color(0.1f, 0.6f, 0.1f), 0.0f, 0.0f, 1.0f));
+    *buffer_ptr = new hitable_list(hitlist, 22 * 22 + 1 + 3);
+    /*world.add_hitable(std::make_shared<triangle>(triangle(vec3(-20.0, 0.0, 50.0), vec3(20.0, 0.0, 50.0), vec3(20.0, 0.0, -50.0), whiteDiffuse))); //floor
     world.add_hitable(std::make_shared<triangle>(triangle(vec3(-20.0, 0.0, 50.0), vec3(20.0, 0.0, -50.0), vec3(-20.0, 0.0, -50.0), whiteDiffuse)));
 
     world.add_hitable(std::make_shared<triangle>(triangle(vec3(-20.0, 0.0, -50.0), vec3(20.0, 0.0, -50.0), vec3(20.0, 40.0, -50.0), whiteDiffuse))); //back wall
@@ -86,15 +84,15 @@ void createScene(scene world) {
     world.add_hitable(std::make_shared<triangle>(triangle(vec3(-20.0, 0.0, 50.0), vec3(-20.0, 0.0, -50.0), vec3(-20.0, 40.0, -50.0), redDiffuse)));
 
     world.add_hitable(std::make_shared<triangle>(triangle(vec3(20.0, 0.0, 50.0), vec3(20.0, 40.0, -50.0), vec3(20.0, 40.0, 50.0), greenDiffuse))); // green wall
-    world.add_hitable(std::make_shared<triangle>(triangle(vec3(20.0, 0.0, 50.0), vec3(20.0, 0.0, -50.0), vec3(20.0, 40.0, -50.0), greenDiffuse)));
+    world.add_hitable(std::make_shared<triangle>(triangle(vec3(20.0, 0.0, 50.0), vec3(20.0, 0.0, -50.0), vec3(20.0, 40.0, -50.0), greenDiffuse))); */
 
-    world.add_hitable(std::make_shared<sphere>(sphere(vec3(7.0, 3.0, 0.0), 3.0, yellowReflective)));
-    world.add_hitable(std::make_shared<sphere>(sphere(vec3(9.0, 10.0, 0.0), 3.0, yellowReflective)));
+    //world.add_hitable(std::make_shared<sphere>(sphere(vec3(7.0, 3.0, 0.0), 3.0, yellowReflective)));
+    //world.add_hitable(std::make_shared<sphere>(sphere(vec3(9.0, 10.0, 0.0), 3.0, yellowReflective)));
 
-    world.add_hitable(std::make_shared<sphere>(sphere(vec3(-7.0, 3.0, 0.0), 3.0, transparent)));
-    world.add_hitable(std::make_shared<sphere>(sphere(vec3(-9.0, 10.0, 0.0), 3.0, transparent)));
+    //world.add_hitable(std::make_shared<sphere>(sphere(vec3(-7.0, 3.0, 0.0), 3.0, transparent)));
+    //world.add_hitable(std::make_shared<sphere>(sphere(vec3(-9.0, 10.0, 0.0), 3.0, transparent)));
 
-    world.add_light(vec3(0.0, 30.0, -2.0));
+    //world.add_light(vec3(0.0, 30.0, -2.0));
     //world.add_light(vec3(2.0, 1.0, -1.0));
 }
 
@@ -102,9 +100,9 @@ int main() {
 
     
 
-    scene world;
+    //scene world;
 
-    createScene(world);
+    //createScene(world);
 
     
 
@@ -117,7 +115,7 @@ int main() {
     int n_pixels = image_height * image_width;
 
     //set up framebuffer
-    vec3 *framebuffer;
+    vec3* framebuffer;
     size_t fb_size = sizeof(vec3) * n_pixels;
     checkCudaErrors(cudaMallocManaged((void**)&framebuffer, fb_size));
 
@@ -128,17 +126,21 @@ int main() {
     dim3 threads(threads_x, threads_y);
 
     //place a camera at the origin (0,0,0)
-    vec3 eye(0.0f, 10.0f, 30.0f);
-    vec3 lookAt(0.0f, 10.0f, -5.0f);
-    vec3 up(0.0f, 1.0f, 0.0f);
+    
     camera** camerabuffer;
-    *camerabuffer = new camera(eye, lookAt, up, 52.0, aspect_ratio, image_width, image_height);
     checkCudaErrors(cudaMalloc((void**) &camerabuffer, sizeof(camera*)));
     
     //set up scenebuffer
+    hitable** list_of_hitables;
+    int n_hitables = 22 * 22 + 1 + 3;
+    checkCudaErrors(cudaMalloc((void**) &list_of_hitables, n_hitables * sizeof(hitable*)));
     hitable** scenebuffer;
-    bindSceneBuffer<<<1, 1>>>(world.hitables[0].get(), world.hitables.size(), scenebuffer);
-    checkCudaErrors(cudaMalloc((void**)scenebuffer, world.hitables.size()*sizeof(hitable*)));
+    checkCudaErrors(cudaMalloc((void**)&scenebuffer, sizeof(hitable*)));
+
+    bindSceneBuffer<<<1, 1>>>(list_of_hitables, scenebuffer,camerabuffer);
+    checkCudaErrors(cudaGetLastError());
+    checkCudaErrors(cudaDeviceSynchronize());
+    
 
 
     std::clog << "Starting render" << std::endl;
@@ -175,7 +177,7 @@ int main() {
     delete[] pixels; //phew
 
     checkCudaErrors(cudaDeviceSynchronize());
-    freeBuffers<<<1, 1 >>>(scenebuffer, world.hitables.size(),camerabuffer);
+    freeBuffers<<<1, 1 >>>(list_of_hitables, scenebuffer, n_hitables,camerabuffer);
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaFree(scenebuffer));
     checkCudaErrors(cudaFree(framebuffer));

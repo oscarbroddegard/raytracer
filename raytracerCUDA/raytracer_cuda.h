@@ -24,10 +24,11 @@
 #include "headers/ray.h"
 #include "headers/sphere.h"
 #include "headers/hitable.h"
+#include "headers/hitable_list.h"
 #include "headers/camera.h"
 #include "headers/scene.h"
 #include "headers/material.h"
-#include "headers/triangle.h"
+//#include "headers/triangle.h"
 
 
 // helper functions
@@ -43,17 +44,10 @@ void check_cuda(cudaError_t result, char const* const func, const char* const fi
     }
 }
 
-__global__ void bindSceneBuffer(hitable* world,int n_hitables, hitable** buffer_ptr) {
-    if (threadIdx.x == 0 && blockIdx.x == 0) {
-        for (int n = 0; n < n_hitables; n++) {
-            *(buffer_ptr + n) = &world[n];
-        }
-    }
-}
-
-__global__ void freeBuffers(hitable** scenebuffer, int sb_size,camera** cam_ptr) {
+__global__ void freeBuffers(hitable** hitlist, hitable** scenebuffer, int sb_size,camera** cam_ptr) {
     for (int n = 0; n < sb_size; n++) {
-        delete* (scenebuffer + n);
+        delete hitlist[n];
     }
     delete* cam_ptr;
+    delete* scenebuffer;
 }
