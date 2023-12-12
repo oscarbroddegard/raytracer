@@ -6,6 +6,8 @@ set(CUDA_SOURCE_FILES
 )
 cmake_policy(SET CMP0104 NEW)
 set(CUDA_ARCHITECTURES "sm_80" "sm_86" CACHE STRING "CUDA architectures to build for")
+set(CMAKE_CUDA_FLAGS_DEBUG "${CMAKE_CUDA_FLAGS_DEBUG} -G")
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --maxrregcount=32 --ptxas-options=-v")
 #set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
 
 cuda_add_executable(raytracer_cuda 

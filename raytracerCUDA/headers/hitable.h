@@ -4,14 +4,14 @@
 #define HITABLE_H
 
 #include "ray.h"
+#include "material.h"
 
-class material;
 
 struct intersection {
 	vec3 hit_position;
 	float hit_t;
 	vec3 hit_normal;
-	material* hit_material;
+	material hit_material;
 };
 
 class hitable {
