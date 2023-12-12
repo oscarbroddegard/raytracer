@@ -15,13 +15,13 @@ public:
 		right = cross(forward, u).normalize();
 		up = cross(right, forward);
 
-		viewX = std::tan(0.5*fov*3.14159/180.0);
-		viewY = std::tan(0.5 * fov / aspectratio * 3.14159 / 180.0);
+		viewX = std::tan(0.5f*fov*3.14159f/180.0f);
+		viewY = std::tan(0.5f * fov / aspectratio * 3.14159f / 180.0f);
 	}
 
 	__host__ __device__ ray getray(float x,float y) const{
-		vec3 pdeltax = 2.0 / ((float)imagewidth) * viewX * right;
-		vec3 pdeltay = -2.0 / ((float)imageheight) * viewX * up;
+		vec3 pdeltax = 2.0f / ((float)imagewidth) * viewX * right;
+		vec3 pdeltay = -2.0f / ((float)imageheight) * viewX * up;
 		vec3 view = forward - viewX * right + viewY * up;
 		return ray(eye, (view + x * pdeltax + y * pdeltay).normalize());
 	}

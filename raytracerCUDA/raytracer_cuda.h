@@ -44,10 +44,10 @@ void check_cuda(cudaError_t result, char const* const func, const char* const fi
     }
 }
 
-__global__ void freeBuffers(hitable** hitlist, hitable** scenebuffer, int sb_size,camera** cam_ptr) {
+__global__ void freeBuffers(sphere* hitlist, sphere_list* scenebuffer, int sb_size,camera* cam_ptr) {
     for (int n = 0; n < sb_size; n++) {
-        delete hitlist[n];
+        delete &hitlist[n];
     }
-    delete* cam_ptr;
-    delete* scenebuffer;
+    delete cam_ptr;
+    delete scenebuffer;
 }

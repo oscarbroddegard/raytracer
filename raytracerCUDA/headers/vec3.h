@@ -65,7 +65,7 @@ class vec3 {
 
 // Vector Utility Functions
 
-__host__ __device__ inline std::ostream& operator<<(std::ostream &out, const vec3 &v) {
+inline std::ostream& operator<<(std::ostream &out, const vec3 &v) {
     return out << v.e[0] << ' ' << v.e[1] << ' ' << v.e[2];
 }
 
@@ -112,7 +112,7 @@ __host__ __device__ inline vec3 unit_vector(vec3 v) {
 }
 
 __host__ __device__ inline vec3 reflect(const vec3& v, const vec3& n) {
-    return v - 2.0 * dot(v, n) * n;
+    return v - 2.0f * dot(v, n) * n;
 }
 
 #endif

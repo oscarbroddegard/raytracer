@@ -16,7 +16,9 @@ public:
 	__device__ sphere() {}
 	__device__ sphere(const vec3& c, const float& r, material* m) :center(c), radius(r) { sphere_material = m; }
 
-	__device__ virtual bool hit(const ray& r,float tmin,float tmax, intersection& isect);
+	virtual bool hit(const ray& r,float tmin,float tmax, intersection& isect);
 };
+
+__device__ inline bool sphere_hit(const ray& r,sphere& target, float tmin, float tmax, intersection& isect);
 
 #endif

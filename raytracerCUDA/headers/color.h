@@ -11,7 +11,7 @@
 #include "vec3.h"
 using color = vec3;
 
-__host__ inline double clamp(double x, double min, double max) {
+__host__ inline float clamp(float x, float min, float max) {
     if (x < min) return min;
     if (x > max) return max;
     return x;
