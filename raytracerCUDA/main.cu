@@ -4,7 +4,7 @@ __device__ bool hit_list(const ray& r, sphere_list* world, float tmin, float tma
     bool hit = false;
     intersection temp_isect;
     double closest_t = tmax;
-    for (int k = 0; k < 3; k++) {
+    for (int k = 0; k < world->n_hitables; k++) {
         if (sphere_hit(r, &world->list[k], tmin, closest_t, temp_isect)) {
             hit = true;
             closest_t = temp_isect.hit_t;
@@ -14,11 +14,11 @@ __device__ bool hit_list(const ray& r, sphere_list* world, float tmin, float tma
     return hit;
 }
 
-__device__ bool sphere_hit(const ray& r,sphere* target, float tmin, float tmax, intersection& isect) {
-	vec3 OC = r.origin - target->center;
+__device__ bool sphere_hit(const ray& r,const sphere& target, float tmin, float tmax, intersection& isect) {
+	vec3 OC = r.origin - target.center;
 	float a = dot(r.direction, r.direction);
 	float b = dot(OC, r.direction);
-	float c = dot(OC, OC) - target->radius * target->radius;
+	float c = dot(OC, OC) - target.radius * target.radius;
 
 	float disc = b * b - a * c;
 	if (disc > 0) {
@@ -26,16 +26,16 @@ __device__ bool sphere_hit(const ray& r,sphere* target, float tmin, float tmax, 
 		if (temp < tmax && temp > tmin) {
 			isect.hit_t = temp;
 			isect.hit_position = r.at(isect.hit_t);
-			isect.hit_normal = (isect.hit_position - target->center) / target->radius;
-			isect.hit_material = target->sphere_material;
+			isect.hit_normal = (isect.hit_position - target.center) / target.radius;
+			isect.hit_material = target.sphere_material;
 			return true;
 		}
 		temp = (-b + sqrt(disc)) / a;
 		if (temp < tmax && temp > tmin) {
 			isect.hit_t = temp;
 			isect.hit_position = r.at(isect.hit_t);
-			isect.hit_normal = ((isect.hit_position - target->center) / target->radius).normalize();
-			isect.hit_material = target->sphere_material;
+			isect.hit_normal = ((isect.hit_position - target.center) / target.radius).normalize();
+			isect.hit_material = target.sphere_material;
 			return true;
 		}
 	}
@@ -100,45 +100,6 @@ __global__ void render(sphere_list* scenebuffer, vec3* framebuffer, camera* CUDA
     framebuffer[pidx] = traceray(r, scenebuffer, depth);
 }
 
-__global__ void bindSceneBuffer(sphere* hitlist, sphere_list* buffer_ptr) {
-
-    material whiteDiffuse = material(color(0.9f, 0.9f, 0.9f), 0.0f, 0.0f, 1.0f);
-    material greenDiffuse = material(color(0.1f, 0.6f, 0.1f), 0.0f, 0.0f, 1.0f);
-    material redDiffuse = material(color(1.0f, 0.1f, 0.1f), 0.0f, 0.0f, 1.0f);
-    material blueDiffuse = material(color(0.0f, 0.2f, 0.9f), 0.0f, 0.0f, 1.0f);
-    material yellowReflective = material(color(1.0f, 0.6f, 0.1f), 0.2f, 0.0f, 1.0f);
-    material transparent = material(color(1.0f, 1.0f, 1.0f), 0.2f, 0.8f, 1.3f);
-
-    //add geometry 
-    //hitlist[0] = sphere(vec3(0, 3, -20), 3.0f, new material(color(1.0f, 0.1f, 0.1f), 0.0f, 0.0f, 1.0f));
-    //hitlist[1] = sphere(vec3(-7.0f, 3.0f, -20.0f), 3.0f, new material(color(0.0f, 0.2f, 0.9f), 0.0f, 0.0f, 1.0f));
-    //hitlist[2] = sphere(vec3(7.0f, 3.0f, -20.0f), 3.0f, new material(color(0.1f, 0.6f, 0.1f), 0.0f, 0.0f, 1.0f));
-    //buffer_ptr = new sphere_list(hitlist, 22 * 22 + 1 + 3);
-    /*world.add_hitable(std::make_shared<triangle>(triangle(vec3(-20.0, 0.0, 50.0), vec3(20.0, 0.0, 50.0), vec3(20.0, 0.0, -50.0), whiteDiffuse))); //floor
-    world.add_hitable(std::make_shared<triangle>(triangle(vec3(-20.0, 0.0, 50.0), vec3(20.0, 0.0, -50.0), vec3(-20.0, 0.0, -50.0), whiteDiffuse)));
-
-    world.add_hitable(std::make_shared<triangle>(triangle(vec3(-20.0, 0.0, -50.0), vec3(20.0, 0.0, -50.0), vec3(20.0, 40.0, -50.0), whiteDiffuse))); //back wall
-    world.add_hitable(std::make_shared<triangle>(triangle(vec3(-20.0, 0.0, -50.0), vec3(20.0, 40.0, -50.0), vec3(-20.0, 40.0, -50.0), whiteDiffuse)));
-
-    world.add_hitable(std::make_shared<triangle>(triangle(vec3(-20.0, 40.0, 50.0), vec3(-20.0, 40.0, -50.0), vec3(20.0, 40.0, 50.0), whiteDiffuse))); //ceiling
-    world.add_hitable(std::make_shared<triangle>(triangle(vec3(20.0, 40.0, 50.0), vec3(-20.0, 40.0, -50.0), vec3(20.0, 40.0, -50.0), whiteDiffuse)));
-
-    world.add_hitable(std::make_shared<triangle>(triangle(vec3(-20.0, 0.0, 50.0), vec3(-20.0, 40.0, -50.0), vec3(-20.0, 40.0, 50.0), redDiffuse))); // red wall
-    world.add_hitable(std::make_shared<triangle>(triangle(vec3(-20.0, 0.0, 50.0), vec3(-20.0, 0.0, -50.0), vec3(-20.0, 40.0, -50.0), redDiffuse)));
-
-    world.add_hitable(std::make_shared<triangle>(triangle(vec3(20.0, 0.0, 50.0), vec3(20.0, 40.0, -50.0), vec3(20.0, 40.0, 50.0), greenDiffuse))); // green wall
-    world.add_hitable(std::make_shared<triangle>(triangle(vec3(20.0, 0.0, 50.0), vec3(20.0, 0.0, -50.0), vec3(20.0, 40.0, -50.0), greenDiffuse))); */
-
-    //world.add_hitable(std::make_shared<sphere>(sphere(vec3(7.0, 3.0, 0.0), 3.0, yellowReflective)));
-    //world.add_hitable(std::make_shared<sphere>(sphere(vec3(9.0, 10.0, 0.0), 3.0, yellowReflective)));
-
-    //world.add_hitable(std::make_shared<sphere>(sphere(vec3(-7.0, 3.0, 0.0), 3.0, transparent)));
-    //world.add_hitable(std::make_shared<sphere>(sphere(vec3(-9.0, 10.0, 0.0), 3.0, transparent)));
-
-    //world.add_light(vec3(0.0, 30.0, -2.0));
-    //world.add_light(vec3(2.0, 1.0, -1.0));
-}
-
 int main() {
 
     
@@ -169,7 +130,7 @@ int main() {
     dim3 threads(threads_x, threads_y);
 
 
-    //place a camera at the origin (0,0,0)
+    //place a camera
     vec3 eye(0.0f, 10.0f, 30.0f);
     vec3 lookAt(0.0f, 10.0f, -5.0f);
     vec3 up(0.0f, 1.0f, 0.0f);
@@ -177,7 +138,7 @@ int main() {
     //std::clog << sizeof(CUDAcam);
     camera* camerabuffer;
     checkCudaErrors(cudaMallocManaged(&camerabuffer, sizeof(camera)));
-    camerabuffer = &CUDAcam;    
+    camerabuffer = &CUDAcam;
 
     //set up scenebuffer
     sphere* scenebuffer;
@@ -192,12 +153,6 @@ int main() {
     scenebuffer[2] = sphere(vec3(7.0f, 3.0f, -20.0f), 3.0f, material(color(0.1f, 0.6f, 0.1f), 0.0f, 0.0f, 1.0f));
     sphere_list scene = sphere_list(scenebuffer, 3);
     list_buffer = &scene;
-
-
-    //bindSceneBuffer<<<1, 1>>>(list_of_hitables, scenebuffer);
-    //checkCudaErrors(cudaGetLastError());
-    //checkCudaErrors(cudaDeviceSynchronize());
-    
 
 
     std::clog << "Starting render" << std::endl;
