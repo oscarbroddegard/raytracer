@@ -9,13 +9,19 @@ if (POLICY CMP0141)
   set(CUDA_ARCHITECTURES "sm_86" CACHE STRING "CUDA architectures to build for")
   set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<IF:$<AND:$<C_COMPILER_ID:MSVC>,$<CXX_COMPILER_ID:MSVC>>,$<$<CONFIG:Debug,RelWithDebInfo>:EditAndContinue>,$<$<CONFIG:Debug,RelWithDebInfo>:ProgramDatabase>>")
 endif()
-cmake_policy(SET CMP0104 NEW)
-set(CUDA_ARCHITECTURES "sm_86" CACHE STRING "CUDA architectures to build for")
+
 
 project ("myfirstraytracer" LANGUAGES CXX CUDA)
 
+# Enable CUDA
 find_package(CUDA REQUIRED)
 
+set(CUDA_ARCHITECTURES "sm_86" CACHE STRING "CUDA architectures to build for")
+set(CMAKE_CUDA_ARCHITECTURES 86)
+
+# Set CUDA standard (optional)
+#set(CMAKE_CUDA_STANDARD 11)
+#set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 
 
 # Include sub-projects.

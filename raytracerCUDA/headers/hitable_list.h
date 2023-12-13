@@ -6,12 +6,21 @@
 
 class sphere_list{
 public:
+	static const int MAX_SPHERES = 100;
+	int n_hitables;
+	sphere list[MAX_SPHERES];
+
 	__host__ __device__ sphere_list() {}
 
-	__host__ __device__ sphere_list(sphere* l, int n) { list = l; n_hitables = n; }
+	__host__ __device__ sphere_list(sphere* l, int n) {
+		n_hitables = n;
+		for (int i = 0; i < n_hitables; ++i) {
+			list[i] = l[i];
+		}
+	}
+	__host__ __device__ ~sphere_list() { delete[] list; }
 	__device__ bool hit(const ray& r, float tmin, float tmax, intersection& isect);
-	sphere* list;
-	int n_hitables;
+	
 };
 
 

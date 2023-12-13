@@ -14,35 +14,6 @@ __device__ bool hit_list(const ray& r, sphere_list* world, float tmin, float tma
     return hit;
 }
 
-__device__ inline bool sphere_hit(const ray& r,const sphere& target, float tmin, float tmax, intersection& isect) {
-	vec3 OC = r.getorigin() - target.center;
-	float a = dot(r.getdirection(), r.getdirection());
-	float b = dot(OC, r.getdirection());
-	float c = dot(OC, OC) - target.radius * target.radius;
-
-	float disc = b * b - a * c;
-	if (disc > 0) {
-		float temp = (-b - sqrt(disc)) / a;
-		if (temp < tmax && temp > tmin) {
-			isect.hit_t = temp;
-			isect.hit_position = r.at(isect.hit_t);
-			isect.hit_normal = (isect.hit_position - target.center) / target.radius;
-			isect.hit_material = target.sphere_material;
-			return true;
-		}
-		temp = (-b + sqrt(disc)) / a;
-		if (temp < tmax && temp > tmin) {
-			isect.hit_t = temp;
-			isect.hit_position = r.at(isect.hit_t);
-			isect.hit_normal = ((isect.hit_position - target.center) / target.radius).normalize();
-			isect.hit_material = target.sphere_material;
-			return true;
-		}
-	}
-
-	return false;
-}
-
 __device__ vec3 traceray(ray r, sphere_list* world, int depth) {
     intersection isect, shadow;
     vec3 unit_direction = r.getdirection(); //keep
@@ -98,20 +69,11 @@ __global__ void render(sphere_list* scenebuffer, vec3* framebuffer, camera* CUDA
     if ((i >= image_width) || (j >= image_height)) return;
     ray r = CUDAcam->getray(((float)i) + 0.5, ((float)j) + 0.5);
     int pidx = j * image_width + i;
-    //framebuffer[pidx] = traceray(r, scenebuffer, depth);
-    framebuffer[pidx] = vec3((float)i / image_width, CUDAcam->getaspect(), 0.0f);
+    framebuffer[pidx] = traceray(r, scenebuffer, depth);
+    //framebuffer[pidx] = vec3((float)i / image_width, CUDAcam->getaspect(), 0.0f);
 }
 
 int main() {
-
-    
-
-    //scene world;
-
-    //createScene(world);
-
-    
-
 
     int n_channels = 3;
     auto aspect_ratio = 1.0;
@@ -139,29 +101,36 @@ int main() {
     camera CUDAcam(vec3(0.0f, 10.0f, 30.0f), vec3(0.0f, 10.0f, -5.0f), vec3(0.0f, 1.0f, 0.0f), 52.0f, 1.0f, 512, 512);
     //std::clog << sizeof(CUDAcam);
     camera* camerabuffer;
-    checkCudaErrors(cudaMallocManaged(&camerabuffer, sizeof(camera)));
-    camerabuffer = &CUDAcam;
+    checkCudaErrors(cudaMalloc(&camerabuffer, sizeof(camera)));
     checkCudaErrors(cudaMemcpy(camerabuffer, &CUDAcam, sizeof(camera), cudaMemcpyHostToDevice));
 
     //set up scenebuffer
-    sphere* scenebuffer;
-    sphere_list* list_buffer;
-    int n_hitables = 3;
+    std::vector<sphere> scene;
+    scene.push_back(sphere(vec3(0, 3, -20), 3.0f, material(color(1.0f, 0.1f, 0.1f), 0.0f, 0.0f, 1.0f)));
+    scene.push_back(sphere(vec3(-7.0f, 3.0f, -20.0f), 3.0f, material(color(0.0f, 0.2f, 0.9f), 0.0f, 0.0f, 1.0f)));
+    scene.push_back(sphere(vec3(7.0f, 3.0f, -20.0f), 3.0f, material(color(0.1f, 0.6f, 0.1f), 0.0f, 0.0f, 1.0f)));
+    int n_hitables = static_cast<int>(scene.size());
+    //scene[0] = sphere(vec3(0, 3, -20), 3.0f, material(color(1.0f, 0.1f, 0.1f), 0.0f, 0.0f, 1.0f));
+    //scene[1] = sphere(vec3(-7.0f, 3.0f, -20.0f), 3.0f, material(color(0.0f, 0.2f, 0.9f), 0.0f, 0.0f, 1.0f));
+    //scene[2] = sphere(vec3(7.0f, 3.0f, -20.0f), 3.0f, material(color(0.1f, 0.6f, 0.1f), 0.0f, 0.0f, 1.0f));
 
-    checkCudaErrors(cudaMallocManaged(&scenebuffer, n_hitables * sizeof(sphere)));
-    checkCudaErrors(cudaMallocManaged(&list_buffer, sizeof(sphere_list)));
+    sphere_list* scenebuffer;
+    sphere_list list = sphere_list(scene.data(), n_hitables);
+    std::clog << "checking" << "\n";
+    checkCudaErrors(cudaMalloc(&scenebuffer, sizeof(scenebuffer)));
+    //std::clog << "checking" << "\n";
+    //checkCudaErrors(cudaMalloc(&(scenebuffer.list), n_hitables * sizeof(sphere)));
+    //std::clog << "checking" << "\n";
+    //checkCudaErrors(cudaMemcpy(scenebuffer.list, scene.data(), n_hitables * sizeof(sphere), cudaMemcpyHostToDevice));
+    std::clog << "checking" << "\n";
+    checkCudaErrors(cudaMemcpy(scenebuffer, &list, sizeof(sphere_list), cudaMemcpyHostToDevice));
 
-    scenebuffer[0] = sphere(vec3(0, 3, -20), 3.0f, material(color(1.0f, 0.1f, 0.1f), 0.0f, 0.0f, 1.0f));
-    scenebuffer[1] = sphere(vec3(-7.0f, 3.0f, -20.0f), 3.0f, material(color(0.0f, 0.2f, 0.9f), 0.0f, 0.0f, 1.0f));
-    scenebuffer[2] = sphere(vec3(7.0f, 3.0f, -20.0f), 3.0f, material(color(0.1f, 0.6f, 0.1f), 0.0f, 0.0f, 1.0f));
-    sphere_list scene = sphere_list(scenebuffer, 3);
-    list_buffer = &scene;
 
 
     std::clog << "Starting render" << std::endl;
     auto starttime = std::chrono::high_resolution_clock::now();
     //send everything to GPU
-    render<<<blocks, threads >>>(list_buffer,framebuffer,camerabuffer,image_width,image_height);
+    render<<<blocks, threads >>>(scenebuffer,framebuffer,camerabuffer,image_width,image_height);
     //get time for performance log
     auto endtime = std::chrono::high_resolution_clock::now();
     auto duration = (std::chrono::duration_cast<std::chrono::microseconds>(endtime - starttime).count() / 1000000.0);
@@ -191,7 +160,6 @@ int main() {
     delete[] pixels; //phew
 
     checkCudaErrors(cudaDeviceSynchronize());
-    freeBuffers<<<1, 1 >>>(scenebuffer, list_buffer, n_hitables);
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaFree(camerabuffer));
     checkCudaErrors(cudaFree(scenebuffer));

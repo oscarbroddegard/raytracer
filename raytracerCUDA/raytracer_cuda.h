@@ -43,10 +43,3 @@ void check_cuda(cudaError_t result, char const* const func, const char* const fi
         exit(99);
     }
 }
-
-__global__ void freeBuffers(sphere* hitlist, sphere_list* scenebuffer, int sb_size) {
-    for (int n = 0; n < sb_size; n++) {
-        delete &hitlist[n];
-    }
-    delete scenebuffer;
-}
