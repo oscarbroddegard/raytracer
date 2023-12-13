@@ -4,32 +4,22 @@
 
 #include "sphere.h"
 
-class sphere_list{
+
+class hitable_list : public hitable {
 public:
-	static const int MAX_SPHERES = 100;
+	__device__ hitable_list() {}
+	__device__ hitable_list(hitable** l, int n) { list = l; n_hitables = n; }
+	__device__ virtual bool hit(const ray& r, float tmin, float tmax, intersection& isect) const;
+	hitable** list;
 	int n_hitables;
-	sphere list[MAX_SPHERES];
-
-	__host__ __device__ sphere_list() {}
-
-	__host__ __device__ sphere_list(sphere* l, int n) {
-		n_hitables = n;
-		for (int i = 0; i < n_hitables; ++i) {
-			list[i] = l[i];
-		}
-	}
-	__host__ __device__ ~sphere_list() { delete[] list; }
-	__device__ bool hit(const ray& r, float tmin, float tmax, intersection& isect);
-	
 };
 
-
-__device__ bool sphere_list::hit(const ray& r, float tmin, float tmax, intersection& isect) {
+__device__ bool hitable_list::hit(const ray& r, float tmin, float tmax, intersection& isect) const{
 	bool hit = false;
 	intersection temp_isect;
 	double closest_t = tmax;
 	for (int k = 0; k < n_hitables; k++) {
-		if (sphere_hit(r, list[k], tmin, closest_t, temp_isect)) {
+		if (list[k]->hit(r, tmin, closest_t, temp_isect)) {
 			hit = true;
 			closest_t = temp_isect.hit_t;
 			isect = temp_isect;

@@ -18,5 +18,4 @@ cuda_add_executable(raytracer_cuda
      "headers/hitable.h" "headers/hitable_list.h" "headers/material.h" "headers/ray.h" "headers/scene.h" "headers/sphere.h" 
      "headers/stb_image.h" "headers/stb_image_write.h" 
      "headers/triangle.h" "headers/vec3.h" 
-     "sphere.cpp" #"triangle.cpp"
 )

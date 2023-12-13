@@ -1,35 +1,18 @@
 #include "raytracer_cuda.h"
 
-__device__ bool hit_list(const ray& r, sphere_list* world, float tmin, float tmax, intersection& isect) {
-    bool hit = false;
-    intersection temp_isect;
-    double closest_t = tmax;
-    for (int k = 0; k < world->n_hitables; k++) {
-        if (sphere_hit(r, world->list[k], tmin, closest_t, temp_isect)) {
-            hit = true;
-            closest_t = temp_isect.hit_t;
-            isect = temp_isect;
-        }
-    }
-    return hit;
-}
-
-__device__ vec3 traceray(ray r, sphere_list* world, int depth) {
+__device__ vec3 traceray(ray r, hitable** world, int depth) {
     intersection isect, shadow;
     vec3 unit_direction = r.getdirection(); //keep
-
-    float t = 0.5f * (unit_direction.normalize().y() + 1.0f);
-    return (1.0f - t) * vec3(1.0f, 1.0f, 1.0f) + t * vec3(0.5f, 0.7f, 1.0f);
     
-    if (hit_list(r,world, 0.01, FLT_MAX, isect)) {
-        vec3 pixelcolor = isect.hit_material.diffuse_color;
+    if ((*world)->hit(r, 0.01, FLT_MAX, isect)) {
+        vec3 pixelcolor = isect.hit_material->diffuse_color;
 
         //shadowing and lighting
         float diff = 0.0;
         vec3 light_source(0.0, 30.0, -2.0);
         vec3 L = light_source - isect.hit_position;
         ray shadowray = getshadowray(isect.hit_position, light_source);
-        if (hit_list(r, world, 0.01, L.norm(), shadow)) {
+        if ((*world)->hit(r, 0.01, L.norm(), shadow)) {
             diff = 0.0;
         }
         else {
@@ -39,20 +22,20 @@ __device__ vec3 traceray(ray r, sphere_list* world, int depth) {
 
         //reflection
         vec3 refcolor;
-        if (isect.hit_material.reflectivity > 0 && depth > 0) {
+        intersection reflect;
+        if (isect.hit_material->reflectivity > 0 && depth > 0) {
             ray reflectedray = getreflectedray(unit_direction.normalize(), isect.hit_normal, isect.hit_position);
             refcolor = traceray(reflectedray, world, depth - 1);
         }
 
         //refraction
         vec3 refractedcolor;
-        if (isect.hit_material.transparency > 0 && depth > 0) {
-            ray refractedray = getrefractedray(unit_direction.normalize(), isect.hit_normal, isect.hit_position, isect.hit_material.refractive_index);
+        if (isect.hit_material->transparency > 0 && depth > 0) {
+            ray refractedray = getrefractedray(unit_direction.normalize(), isect.hit_normal, isect.hit_position, isect.hit_material->refractive_index);
             refractedcolor = traceray(refractedray, world, depth - 1);
         }
 
-        pixelcolor = (1 - isect.hit_material.transparency - isect.hit_material.reflectivity) * pixelcolor + isect.hit_material.reflectivity * refcolor + isect.hit_material.transparency * refractedcolor;
-
+        pixelcolor = (1 - isect.hit_material->transparency - isect.hit_material->reflectivity) * pixelcolor + isect.hit_material->reflectivity * refcolor + isect.hit_material->transparency * refractedcolor;
 
         return pixelcolor;
     }
@@ -63,7 +46,22 @@ __device__ vec3 traceray(ray r, sphere_list* world, int depth) {
     }
 }
 
-__global__ void render(sphere_list* scenebuffer, vec3* framebuffer, camera* CUDAcam, int image_width, int image_height,int depth = 4) {
+__global__ void bindscenebuffer(hitable** devlist,hitable** scenebuffer) {
+    *devlist = new sphere(vec3(0, 3, -20), 3.0f, new material(color(1.0f, 0.1f, 0.1f), 0.0f, 0.0f, 1.0f));
+    *(devlist+1) = new sphere(vec3(-7.0f, 3.0f, -20.0f), 3.0f, new material(color(0.0f, 0.2f, 0.9f), 0.0f, 0.0f, 1.0f));
+   *(devlist+2) = new sphere(vec3(7.0f, 3.0f, -20.0f), 3.0f, new material(color(0.1f, 0.6f, 0.1f), 0.0f, 0.0f, 1.0f));
+
+   *(devlist + 3) = new sphere(vec3(7.0, 3.0, 0.0), 3.0, new material(color(1.0f, 0.6f, 0.1f), 0.0f, 0.0f, 1.0f));
+   *(devlist + 4) = new sphere(vec3(9.0, 10.0, 0.0), 3.0, new material(color(1.0f, 0.6f, 0.1f), 0.0f, 0.0f, 1.0f));
+
+   *(devlist + 5) = new sphere(vec3(-7.0, 3.0, 0.0), 3.0, new material(color(1.0f, 1.0f, 1.0f), 0.0f, 0.0f, 1.3f));
+   *(devlist + 6) = new sphere(vec3(-9.0, 10.0, 0.0), 3.0, new material(color(1.0f, 1.0f, 1.0f), 0.0f, 0.0f, 1.3f));
+   //*(devlist + 5) = new triangle(new vec3(-20.0, 0.0, -50.0), new vec3(20.0, 0.0, -50.0), new vec3(20.0, 40.0, -50.0), new material(color(0.9f, 0.9f, 0.9f), 0.0f, 0.0f, 1.0f))
+
+   *scenebuffer = new hitable_list(devlist, 7);
+}
+
+__global__ void render(hitable** scenebuffer, vec3* framebuffer, camera* CUDAcam, int image_width, int image_height,int depth = 4) {
     int i = threadIdx.x + blockIdx.x * blockDim.x;
     int j = threadIdx.y + blockIdx.y * blockDim.y;
     if ((i >= image_width) || (j >= image_height)) return;
@@ -105,25 +103,12 @@ int main() {
     checkCudaErrors(cudaMemcpy(camerabuffer, &CUDAcam, sizeof(camera), cudaMemcpyHostToDevice));
 
     //set up scenebuffer
-    std::vector<sphere> scene;
-    scene.push_back(sphere(vec3(0, 3, -20), 3.0f, material(color(1.0f, 0.1f, 0.1f), 0.0f, 0.0f, 1.0f)));
-    scene.push_back(sphere(vec3(-7.0f, 3.0f, -20.0f), 3.0f, material(color(0.0f, 0.2f, 0.9f), 0.0f, 0.0f, 1.0f)));
-    scene.push_back(sphere(vec3(7.0f, 3.0f, -20.0f), 3.0f, material(color(0.1f, 0.6f, 0.1f), 0.0f, 0.0f, 1.0f)));
-    int n_hitables = static_cast<int>(scene.size());
-    //scene[0] = sphere(vec3(0, 3, -20), 3.0f, material(color(1.0f, 0.1f, 0.1f), 0.0f, 0.0f, 1.0f));
-    //scene[1] = sphere(vec3(-7.0f, 3.0f, -20.0f), 3.0f, material(color(0.0f, 0.2f, 0.9f), 0.0f, 0.0f, 1.0f));
-    //scene[2] = sphere(vec3(7.0f, 3.0f, -20.0f), 3.0f, material(color(0.1f, 0.6f, 0.1f), 0.0f, 0.0f, 1.0f));
-
-    sphere_list* scenebuffer;
-    sphere_list list = sphere_list(scene.data(), n_hitables);
-    std::clog << "checking" << "\n";
-    checkCudaErrors(cudaMalloc(&scenebuffer, sizeof(scenebuffer)));
-    //std::clog << "checking" << "\n";
-    //checkCudaErrors(cudaMalloc(&(scenebuffer.list), n_hitables * sizeof(sphere)));
-    //std::clog << "checking" << "\n";
-    //checkCudaErrors(cudaMemcpy(scenebuffer.list, scene.data(), n_hitables * sizeof(sphere), cudaMemcpyHostToDevice));
-    std::clog << "checking" << "\n";
-    checkCudaErrors(cudaMemcpy(scenebuffer, &list, sizeof(sphere_list), cudaMemcpyHostToDevice));
+    int n_hitables = 7;
+    hitable** devlist;
+    hitable** scenebuffer;
+    checkCudaErrors(cudaMalloc((void**)&devlist, n_hitables * sizeof(hitable*)));
+    checkCudaErrors(cudaMalloc((void**)&scenebuffer,sizeof(hitable*)));
+    bindscenebuffer<<<1, 1 >>>(devlist, scenebuffer);
 
 
 

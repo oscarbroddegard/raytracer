@@ -12,19 +12,19 @@ class sphere: public hitable {
 public:
 	vec3 center;
 	float radius;
-	material sphere_material;
+	material *sphere_material;
 
 	__host__ __device__ sphere() {}
-	__host__ __device__ sphere(const vec3& c, const float& r, material m) :center(c), radius(r) { sphere_material = m; }
+	__host__ __device__ sphere(const vec3& c, const float& r, material* m) :center(c), radius(r),sphere_material(m) {}
 
-	virtual bool hit(const ray& r,float tmin,float tmax, intersection& isect);
+	__device__ virtual bool hit(const ray& r,float tmin,float tmax, intersection& isect) const;
 };
 
-__device__ inline bool sphere_hit(const ray& r, const sphere& target, float tmin, float tmax, intersection& isect) {
-	vec3 OC = r.getorigin() - target.center;
+__device__ bool sphere::hit(const ray& r, float tmin, float tmax, intersection& isect) const{
+	vec3 OC = r.getorigin() - center;
 	float a = dot(r.getdirection(), r.getdirection());
 	float b = dot(OC, r.getdirection());
-	float c = dot(OC, OC) - target.radius * target.radius;
+	float c = dot(OC, OC) - radius * radius;
 
 	float disc = b * b - a * c;
 	if (disc > 0) {
@@ -32,16 +32,16 @@ __device__ inline bool sphere_hit(const ray& r, const sphere& target, float tmin
 		if (temp < tmax && temp > tmin) {
 			isect.hit_t = temp;
 			isect.hit_position = r.at(isect.hit_t);
-			isect.hit_normal = (isect.hit_position - target.center) / target.radius;
-			isect.hit_material = target.sphere_material;
+			isect.hit_normal = (isect.hit_position - center) / radius;
+			isect.hit_material = sphere_material;
 			return true;
 		}
 		temp = (-b + sqrt(disc)) / a;
 		if (temp < tmax && temp > tmin) {
 			isect.hit_t = temp;
 			isect.hit_position = r.at(isect.hit_t);
-			isect.hit_normal = ((isect.hit_position - target.center) / target.radius).normalize();
-			isect.hit_material = target.sphere_material;
+			isect.hit_normal = ((isect.hit_position - center) / radius).normalize();
+			isect.hit_material = sphere_material;
 			return true;
 		}
 	}
