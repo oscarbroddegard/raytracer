@@ -20,6 +20,6 @@ public:
 	virtual bool hit(const ray& r,float tmin,float tmax, intersection& isect);
 };
 
-__device__ inline bool sphere_hit(const ray& r,sphere* target, float tmin, float tmax, intersection& isect);
+__device__ inline bool sphere_hit(const ray& r,sphere& target, float tmin, float tmax, intersection& isect);
 
 #endif

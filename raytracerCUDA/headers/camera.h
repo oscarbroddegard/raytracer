@@ -3,7 +3,6 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 
-#include "vec3.h"
 #include "ray.h"
 
 class camera {
@@ -19,13 +18,15 @@ public:
 		viewY = std::tan(0.5f * fov / aspectratio * 3.14159f / 180.0f);
 	}
 
-	__host__ __device__ ray getray(float x,float y) const{
+	__device__ ray getray(float x,float y) const{
 		vec3 pdeltax = 2.0f / ((float)imagewidth) * viewX * right;
 		vec3 pdeltay = -2.0f / ((float)imageheight) * viewX * up;
 		vec3 view = forward - viewX * right + viewY * up;
 		return ray(eye, (view + x * pdeltax + y * pdeltay).normalize());
 	}
 
+	__device__ float getaspect() { return aspectratio; }
+private:
 	vec3 eye,lookat,up,forward,right;
 	float fov, aspectratio, viewX, viewY;
 	int imagewidth, imageheight;

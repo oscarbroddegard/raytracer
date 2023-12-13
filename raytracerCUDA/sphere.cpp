@@ -1,9 +1,9 @@
 #include "headers/sphere.h"
 
 bool sphere::hit(const ray& r,float tmin,float tmax,intersection& isect) {
-	vec3 OC = r.origin - center;
-	float a = dot(r.direction, r.direction);
-	float b = dot(OC, r.direction);
+	vec3 OC = r.getorigin() - center;
+	float a = dot(r.getdirection(), r.getdirection());
+	float b = dot(OC, r.getdirection());
 	float c = dot(OC,OC)-radius*radius;
 
 	float disc = b * b - a * c;

@@ -4,6 +4,7 @@
 set(CUDA_SOURCE_FILES
     main.cu
 )
+
 cmake_policy(SET CMP0104 NEW)
 set(CUDA_ARCHITECTURES "sm_86" CACHE STRING "CUDA architectures to build for")
 set(CMAKE_CUDA_FLAGS_DEBUG "${CMAKE_CUDA_FLAGS_DEBUG} -G")

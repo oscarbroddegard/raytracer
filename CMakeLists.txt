@@ -6,11 +6,11 @@ cmake_minimum_required (VERSION 3.8)
 # Enable Hot Reload for MSVC compilers if supported.
 if (POLICY CMP0141)
   cmake_policy(SET CMP0141 NEW)
-  set(CUDA_ARCHITECTURES "sm_80" CACHE STRING "CUDA architectures to build for")
+  set(CUDA_ARCHITECTURES "sm_86" CACHE STRING "CUDA architectures to build for")
   set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<IF:$<AND:$<C_COMPILER_ID:MSVC>,$<CXX_COMPILER_ID:MSVC>>,$<$<CONFIG:Debug,RelWithDebInfo>:EditAndContinue>,$<$<CONFIG:Debug,RelWithDebInfo>:ProgramDatabase>>")
 endif()
 cmake_policy(SET CMP0104 NEW)
-set(CUDA_ARCHITECTURES "sm_80" CACHE STRING "CUDA architectures to build for")
+set(CUDA_ARCHITECTURES "sm_86" CACHE STRING "CUDA architectures to build for")
 
 project ("myfirstraytracer" LANGUAGES CXX CUDA)
 
@@ -21,3 +21,4 @@ find_package(CUDA REQUIRED)
 # Include sub-projects.
 add_subdirectory ("myfirstraytracer")
 add_subdirectory("raytracerCUDA")
+add_subdirectory("raytracerCUDA_simple")

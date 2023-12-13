@@ -20,7 +20,7 @@ __device__ bool sphere_list::hit(const ray& r, float tmin, float tmax, intersect
 	intersection temp_isect;
 	double closest_t = tmax;
 	for (int k = 0; k < n_hitables; k++) {
-		if (sphere_hit(r, &list[k], tmin, closest_t, temp_isect)) {
+		if (sphere_hit(r, list[k], tmin, closest_t, temp_isect)) {
 			hit = true;
 			closest_t = temp_isect.hit_t;
 			isect = temp_isect;

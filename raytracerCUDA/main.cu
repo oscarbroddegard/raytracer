@@ -5,7 +5,7 @@ __device__ bool hit_list(const ray& r, sphere_list* world, float tmin, float tma
     intersection temp_isect;
     double closest_t = tmax;
     for (int k = 0; k < world->n_hitables; k++) {
-        if (sphere_hit(r, &world->list[k], tmin, closest_t, temp_isect)) {
+        if (sphere_hit(r, world->list[k], tmin, closest_t, temp_isect)) {
             hit = true;
             closest_t = temp_isect.hit_t;
             isect = temp_isect;
@@ -14,10 +14,10 @@ __device__ bool hit_list(const ray& r, sphere_list* world, float tmin, float tma
     return hit;
 }
 
-__device__ bool sphere_hit(const ray& r,const sphere& target, float tmin, float tmax, intersection& isect) {
-	vec3 OC = r.origin - target.center;
-	float a = dot(r.direction, r.direction);
-	float b = dot(OC, r.direction);
+__device__ inline bool sphere_hit(const ray& r,const sphere& target, float tmin, float tmax, intersection& isect) {
+	vec3 OC = r.getorigin() - target.center;
+	float a = dot(r.getdirection(), r.getdirection());
+	float b = dot(OC, r.getdirection());
 	float c = dot(OC, OC) - target.radius * target.radius;
 
 	float disc = b * b - a * c;
@@ -45,7 +45,8 @@ __device__ bool sphere_hit(const ray& r,const sphere& target, float tmin, float 
 
 __device__ vec3 traceray(ray r, sphere_list* world, int depth) {
     intersection isect, shadow;
-    vec3 unit_direction = r.direction;
+    vec3 unit_direction = r.getdirection(); //keep
+
     float t = 0.5f * (unit_direction.normalize().y() + 1.0f);
     return (1.0f - t) * vec3(1.0f, 1.0f, 1.0f) + t * vec3(0.5f, 0.7f, 1.0f);
     
@@ -68,14 +69,14 @@ __device__ vec3 traceray(ray r, sphere_list* world, int depth) {
         //reflection
         vec3 refcolor;
         if (isect.hit_material.reflectivity > 0 && depth > 0) {
-            ray reflectedray = getreflectedray(r.direction.normalize(), isect.hit_normal, isect.hit_position);
+            ray reflectedray = getreflectedray(unit_direction.normalize(), isect.hit_normal, isect.hit_position);
             refcolor = traceray(reflectedray, world, depth - 1);
         }
 
         //refraction
         vec3 refractedcolor;
         if (isect.hit_material.transparency > 0 && depth > 0) {
-            ray refractedray = getrefractedray(r.direction.normalize(), isect.hit_normal, isect.hit_position, isect.hit_material.refractive_index);
+            ray refractedray = getrefractedray(unit_direction.normalize(), isect.hit_normal, isect.hit_position, isect.hit_material.refractive_index);
             refractedcolor = traceray(refractedray, world, depth - 1);
         }
 
@@ -85,7 +86,7 @@ __device__ vec3 traceray(ray r, sphere_list* world, int depth) {
         return pixelcolor;
     }
     else { //background
-        vec3 unit_direction = r.direction;
+        vec3 unit_direction = r.getdirection();
         float t = 0.5f * (unit_direction.normalize().y() + 1.0f);
         return (1.0f - t) * vec3(1.0f, 1.0f, 1.0f) + t * vec3(0.5f, 0.7f, 1.0f);
     }
@@ -95,9 +96,10 @@ __global__ void render(sphere_list* scenebuffer, vec3* framebuffer, camera* CUDA
     int i = threadIdx.x + blockIdx.x * blockDim.x;
     int j = threadIdx.y + blockIdx.y * blockDim.y;
     if ((i >= image_width) || (j >= image_height)) return;
-    ray r = (CUDAcam)->getray(((float)i) + 0.5, ((float)j) + 0.5);
+    ray r = CUDAcam->getray(((float)i) + 0.5, ((float)j) + 0.5);
     int pidx = j * image_width + i;
-    framebuffer[pidx] = traceray(r, scenebuffer, depth);
+    //framebuffer[pidx] = traceray(r, scenebuffer, depth);
+    framebuffer[pidx] = vec3((float)i / image_width, CUDAcam->getaspect(), 0.0f);
 }
 
 int main() {
@@ -121,11 +123,11 @@ int main() {
     //set up framebuffer
     vec3* framebuffer;
     size_t fb_size = sizeof(vec3) * n_pixels;
-    checkCudaErrors(cudaMalloc(&framebuffer, fb_size));
+    checkCudaErrors(cudaMallocManaged(&framebuffer, fb_size));
 
     //set up thread block sizes
-    int threads_x = 8;
-    int threads_y = 8;
+    int threads_x = 16;
+    int threads_y = 16;
     dim3 blocks(image_width / threads_x + 1, image_height / threads_y + 1);
     dim3 threads(threads_x, threads_y);
 
@@ -134,11 +136,12 @@ int main() {
     vec3 eye(0.0f, 10.0f, 30.0f);
     vec3 lookAt(0.0f, 10.0f, -5.0f);
     vec3 up(0.0f, 1.0f, 0.0f);
-    camera CUDAcam(eye, lookAt, up, 52.0f, 1.0f, 512, 512);
+    camera CUDAcam(vec3(0.0f, 10.0f, 30.0f), vec3(0.0f, 10.0f, -5.0f), vec3(0.0f, 1.0f, 0.0f), 52.0f, 1.0f, 512, 512);
     //std::clog << sizeof(CUDAcam);
     camera* camerabuffer;
     checkCudaErrors(cudaMallocManaged(&camerabuffer, sizeof(camera)));
     camerabuffer = &CUDAcam;
+    checkCudaErrors(cudaMemcpy(camerabuffer, &CUDAcam, sizeof(camera), cudaMemcpyHostToDevice));
 
     //set up scenebuffer
     sphere* scenebuffer;
@@ -168,9 +171,6 @@ int main() {
     //failsafe
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());
-
-    std::clog << std::flush;
-
     
 
     //pixel buffer to export to image
@@ -193,7 +193,6 @@ int main() {
     checkCudaErrors(cudaDeviceSynchronize());
     freeBuffers<<<1, 1 >>>(scenebuffer, list_buffer, n_hitables);
     checkCudaErrors(cudaGetLastError());
-    checkCudaErrors(cudaFree(list_buffer));
     checkCudaErrors(cudaFree(camerabuffer));
     checkCudaErrors(cudaFree(scenebuffer));
     checkCudaErrors(cudaFree(framebuffer));
