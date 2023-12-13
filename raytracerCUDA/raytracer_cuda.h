@@ -43,3 +43,11 @@ void check_cuda(cudaError_t result, char const* const func, const char* const fi
         exit(99);
     }
 }
+
+__global__ void unbindScenebuffer(hitable** devlist, hitable** scenebuffer,int n_hitables) {
+    for (int i = 0; i < n_hitables; i++) {
+        delete ((sphere*)devlist[i])->sphere_material;
+        delete devlist[i];
+    }
+    delete* scenebuffer;
+}

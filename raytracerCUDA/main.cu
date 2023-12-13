@@ -144,10 +144,11 @@ int main() {
 
     delete[] pixels; //phew
 
+
+    unbindScenebuffer<<<1, 1 >>>(devlist, scenebuffer, n_hitables);
     checkCudaErrors(cudaDeviceSynchronize());
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaFree(camerabuffer));
-    checkCudaErrors(cudaFree(scenebuffer));
     checkCudaErrors(cudaFree(framebuffer));
 
     return 0;
