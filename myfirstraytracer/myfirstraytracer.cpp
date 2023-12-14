@@ -138,7 +138,7 @@ int main() {
 
     std::clog << "Done! Duration: " << duration << "s" << "\n";
 
-    stbi_write_png("C:/Users/oscar/source/repos/myfirstraytracer/out/out.png",image_width,image_height,n_channels,pixels,image_width*n_channels);
+    stbi_write_png("C:/Users/oscar/source/repos/oscarbroddegard/raytracer/out/out.png",image_width,image_height,n_channels,pixels,image_width*n_channels);
 
     delete[] pixels; //phew
 
