@@ -12,7 +12,7 @@ __device__ vec3 traceray(ray r, hitable** world, int depth) {
         vec3 light_source(0.0, 30.0, -2.0);
         vec3 L = light_source - isect.hit_position;
         ray shadowray = getshadowray(isect.hit_position, light_source);
-        if ((*world)->hit(r, 0.01, L.norm(), shadow)) {
+        if ((*world)->hit(shadowray, 0.01, L.norm(), shadow)) {
             diff = 0.0;
         }
         else {
